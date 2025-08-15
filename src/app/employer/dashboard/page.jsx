@@ -156,7 +156,7 @@ const EmployerDashboard = () => {
   };
 
   if (
-    isLoggedIn.is_verified === 0 ||
+    isLoggedIn.is_verified === 1 ||
     isLoggedIn.is_verified === null ||
     isLoggedIn.is_blocked === 1
   ) {
