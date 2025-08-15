@@ -2,7 +2,7 @@ export let jobsData = [];
 
 console.log(jobsData);
 async function fetchJobs() {
-  const response = await fetch("http://127.0.0.1:8000/api/v1/jobs");
+  const response = await fetch("http://147.93.18.63:8000/api/v1/jobs");
   const apiData = await response.json();
 
   if (!apiData || !apiData.data || !Array.isArray(apiData.data.data)) {
