@@ -788,7 +788,7 @@ const Dashboard = () => {
             </button>
             <div className="w-full h-[90vh]">
               <iframe
-                src="http://127.0.0.1:8000/storage/pdf/qcUtUhAaO43fIzUhfnuWfMlhaQJUEYla5UCkLxa2.pdf"
+                src="http://147.93.18.63:8000/storage/pdf/qcUtUhAaO43fIzUhfnuWfMlhaQJUEYla5UCkLxa2.pdf"
                 width="100%"
                 height="100%"
                 className="rounded-b-lg"
