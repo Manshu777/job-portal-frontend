@@ -5,20 +5,19 @@ import { FiPlus } from "react-icons/fi";
 import { BiTrendingUp, BiTrendingDown } from "react-icons/bi";
 import Sidebar from "../../components/Sidebar";
 import { baseurl } from "@/app/components/common";
-import { parseISO, addDays, isAfter,format } from "date-fns";
+import { parseISO, addDays, isAfter, format } from "date-fns";
 import axios from "axios";
-import { HiDotsVertical,HiTrash } from "react-icons/hi";
+import { HiDotsVertical, HiTrash } from "react-icons/hi";
 import { useRouter, usePathname } from "next/navigation";
 import Swal from "sweetalert2"; 
 
-
-
-import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/react'; 
+import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react"; // For dropdown menu, install @headlessui/react
 
 const EmployerDashboard = () => {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const [jobs, setJobs] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [formData, setFormData] = useState({
@@ -30,6 +29,10 @@ const EmployerDashboard = () => {
     location: "",
     deadline: "",
   });
+
+  const handleClose = () => {
+    setIsVisible(false);
+  };
 
   useEffect(() => {
     const checkLogin = async () => {
@@ -45,6 +48,7 @@ const EmployerDashboard = () => {
 
         if (res.data && res.data.success) {
           setIsLoggedIn(res.data.data);
+          setIsVisible(res.data.data.is_blocked);
         }
       } catch (err) {
         console.error("Not logged in or invalid token");
@@ -54,8 +58,6 @@ const EmployerDashboard = () => {
 
     checkLogin();
   }, []);
-
-  console.log("isLoggedI", isLoggedIn.id);
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -89,9 +91,6 @@ const EmployerDashboard = () => {
     setIsJobModalOpen(false);
   };
 
-  console.log("isLoggedIn.is_verified", isLoggedIn);
-
-  // Check if employer is not verified
   if (
     isLoggedIn.is_verified === 0 ||
     isLoggedIn.is_verified === null ||
@@ -113,16 +112,42 @@ const EmployerDashboard = () => {
               log in and apply. Please wait for admin approval or contact
               support for assistance.
             </p>
+            {isVisible && (
+              <div className="flex items-center bg-red-100 text-red-700 border border-red-300 rounded-lg p-4 shadow-lg  mx-auto mb-4">
+                <div className="mr-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    fill="currentColor"
+                    className="bi bi-exclamation-circle text-red-700"
+                    viewBox="0 0 16 16"
+                  >
+                    <path d="M8 1a7 7 0 1 0 7 7 7 7 0 0 0-7-7zm0 12a5 5 0 1 1 5-5 5 5 0 0 1-5 5z" />
+                    <path d="M7.002 5.001a.5.5 0 0 1 .492.41L7.5 5.5v3a.5.5 0 0 1-.992.09L6.5 8.5V5.5a.5.5 0 0 1 .502-.499z" />
+                    <path d="M8 10a.5.5 0 0 1 .5.5V11a.5.5 0 0 1-.992.09L7.5 11v-.5a.5.5 0 0 1 .5-.5z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="m-0">
+                    <b>Remark : </b>
+                    {isLoggedIn.remark}
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="flex justify-center gap-4">
-              <a
-                href="/employer/verify-status" // Replace with your verification status page URL
-                className="px-6 py-3 bg-[#02325a] text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-300"
-              >
-                Check Verification Status
-              </a>
+              {!isVisible && (
+                <a
+                  href="/employer/verify-status" // Replace with your verification status page URL
+                  className="px-6 py-3 bg-[#02325a] text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-300"
+                >
+                  Check Verification Status
+                </a>
+              )}
               <a
                 href="/contact" // Replace with your support page URL
-                className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-300"
+                className={`px-6 py-3  bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-300`}
               >
                 Contact Support
               </a>
@@ -162,6 +187,34 @@ const EmployerDashboard = () => {
             </button>
           </div>
 
+          {isVisible && (
+            <div className="flex items-center bg-red-100 text-red-700 border border-red-300 rounded-lg p-4 shadow-lg  mx-auto mb-4">
+              <div className="mr-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  fill="currentColor"
+                  className="bi bi-exclamation-circle text-red-700"
+                  viewBox="0 0 16 16"
+                >
+                  <path d="M8 1a7 7 0 1 0 7 7 7 7 0 0 0-7-7zm0 12a5 5 0 1 1 5-5 5 5 0 0 1-5 5z" />
+                  <path d="M7.002 5.001a.5.5 0 0 1 .492.41L7.5 5.5v3a.5.5 0 0 1-.992.09L6.5 8.5V5.5a.5.5 0 0 1 .502-.499z" />
+                  <path d="M8 10a.5.5 0 0 1 .5.5V11a.5.5 0 0 1-.992.09L7.5 11v-.5a.5.5 0 0 1 .5-.5z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="m-0">{isLoggedIn.remark}</p>
+              </div>
+              <button
+                onClick={handleClose}
+                className="text-red-700 font-bold text-lg ml-2 hover:text-red-900"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <MetricCard
               title="Total Job Visits"
@@ -196,7 +249,9 @@ const EmployerDashboard = () => {
           </h2>
           <div className="grid grid-cols-1 gap-6">
             {jobs.length > 0 ? (
-              jobs.map((job) => <NewJobCard key={job.id} setJobs={setJobs} job={job} />)
+              jobs.map((job) => (
+                <NewJobCard key={job.id} setJobs={setJobs} job={job} />
+              ))
             ) : (
               <p className="text-gray-600">No jobs posted yet.</p>
             )}
@@ -250,8 +305,7 @@ const JobCard = ({ job }) => {
   const status = isExpired ? "Expired" : "Active";
   const verify = job.is_verified ? "Active" : "Not Active";
 
-
-    const postedDate = format(createdAt, 'd, MMMM yyyy'); // Updated to desired format
+  const postedDate = format(createdAt, "d, MMMM yyyy"); // Updated to desired format
 
   const skills =
     typeof job?.additional_requirements === "string"
@@ -340,7 +394,7 @@ const NewJobCard = ({ job, setJobs }) => {
   const deadlineFormatted = deadline.toLocaleDateString();
   const isExpired = isAfter(new Date(), deadline);
 
-  const postedDate = format(createdAt, 'd, MMMM yyyy'); // Updated to desired format
+  const postedDate = format(createdAt, "d, MMMM yyyy"); // Updated to desired format
   const status = isExpired ? "Expired" : "Active";
   const router = useRouter(); // Ensure router is imported and available
 
@@ -376,7 +430,9 @@ const NewJobCard = ({ job, setJobs }) => {
         });
         setJobs((prevJobs) =>
           prevJobs.map((j) =>
-            j.id === job.id ? { ...j, created_at: response.data.data.created_at } : j
+            j.id === job.id
+              ? { ...j, created_at: response.data.data.created_at }
+              : j
           )
         );
       } else {
@@ -481,7 +537,9 @@ const NewJobCard = ({ job, setJobs }) => {
           </h3>
           <div className="flex my-1 text-md gap-2 text-slate-500">
             <span>{job.location}</span>
-            <span className="relative simple-line">Posted on: {postedDate}</span>
+            <span className="relative simple-line">
+              Posted on: {postedDate}
+            </span>
             <span>{job?.employer?.name || "N/A"}</span>
           </div>
         </div>

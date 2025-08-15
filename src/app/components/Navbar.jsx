@@ -25,7 +25,8 @@ export default function Navbar() {
   const pathname = usePathname();
   const [usercred,setusercred] = useState()
   const [showCredits, setShowCredits] = useState(false);
-  // Check if user is logged in on mount
+  
+  
   useEffect(() => {
     const checkLogin = async () => {
       const token = localStorage.getItem("employerToken") || localStorage.getItem("port_tok");
