@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noEmit": true,
+    "incremental": true,
+    "module": "esnext",
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "baseUrl": ".",  // Set the base URL for relative module resolution
+    "paths": {
+      "@/*": ["src/*"]  // Define the alias for the 'src' folder
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    ".next/types/**/*.ts",
+    "**/*.ts",
+    "**/*.tsx"
+, "src/app/candidate/CVgenerationcandidate/CVGeneration.js", "src/app/candidate/CVgenerationcandidate/components/forms/CertificationsForm.js" , "src/app/candidate/CVgenerationcandidate/components/CVBuilder.js", "src/app/candidate/CVgenerationcandidate/components/forms/SkillsForm.js", "src/app/candidate/CVgenerationcandidate/components/forms/ProjectsForm.js", "src/app/candidate/CVgenerationcandidate/components/forms/PersonalInfoForm.js", "src/app/candidate/CVgenerationcandidate/components/forms/LanguagesForm.js", "src/app/candidate/CVgenerationcandidate/components/forms/ExperienceForm.js", "src/app/candidate/CVgenerationcandidate/components/forms/EducationForm.js", "src/app/candidate/CVgenerationcandidate/components/TemplateSelector.js", "src/app/candidate/CVgenerationcandidate/components/TemplateCustomizer.js", "src/app/candidate/CVgenerationcandidate/components/ExportModal.js", "src/app/candidate/CVgenerationcandidate/components/CVPreview.js" ],
+  "exclude": [
+    "node_modules"
+  ]
+}

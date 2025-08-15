@@ -1,0 +1,156 @@
+@import "tailwindcss";
+@plugin "flowbite-react/plugin/tailwindcss";
+@source "../../.flowbite-react/class-list.json";
+
+
+/* @import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+
+
+*{
+  font-family: "Figtree";
+} */
+
+.react-select__menu{
+  z-index: 9999 !important;
+}
+
+
+
+/* @import url('https://fonts.googleapis.com/css2?family=Montserrat+Alternates:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap'); */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+*{
+  font-family: "Roboto", sans-serif;
+
+
+
+}
+
+
+.simple-line::after{
+     content: '';
+    height: 18px;
+    width: 1.5px;
+    position: absolute;
+    bottom: 4px;
+    left: -5px;
+    background-color: #62748e86;
+    background-size: contain;
+}
+
+
+.simple-line::before{
+     content: '';
+    height: 18px;
+    width: 1.5px;
+    position: absolute;
+    bottom: 4px;
+    right: -5px;
+    background-color: #62748e86;
+    background-size: contain;
+}
+
+
+.add-img-bg{
+  position: relative;
+}
+
+.add-img-bg::after{
+  content: '';
+     height: 351px;
+    width: 400px;
+    position: absolute;
+    bottom: 40px;
+    left: 69px;
+
+  background: url('../../public/img/designer.svg') no-repeat 0px 0px;
+background-size:contain;
+}
+
+
+.add-img-bg::before{
+  content: '';
+    height: 351px;
+    width: 400px;
+    position: absolute;
+    bottom: 40px;
+    right: 76px;
+
+  background: url('../../public/img/working.svg') no-repeat 0px 0px;
+background-size:contain;
+}
+
+.dot-img-add{
+  position: relative;
+}
+
+.dot-img-add::after{
+    content: '';
+
+       height: 100%;
+    width: 31%;
+    position: absolute;
+    top: -34px;
+    right: -71px;
+
+
+  background: url('../../public/img/bg-dot.svg') no-repeat 0px 0px;
+background-size:contain;
+}
+
+
+
+
+.swal2-popup {
+  font-family: 'Inter', sans-serif; /* Match your app's font */
+  border-radius: 12px;
+}
+
+.swal2-confirm {
+  background-color: #309689 !important;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 600;
+}
+
+.swal2-title {
+  color: #1f2937; /* Dark gray for title */
+}
+
+.swal2-content {
+  color: #4b5563; /* Medium gray for text */
+}
+
+h1,h2,h3,h4,h5,h6{
+  font-family: "Montserrat ", sans-serif;
+
+}
+
+
+
+
+@media (max-width:456px) {
+  .add-img-bg::after{
+   display: none;
+}
+
+
+.add-img-bg::before{
+ /* display: none; */
+
+    height: 351px;
+    width: 300px;
+    bottom: 40px;
+    right: 76px;
+    opacity: 0.5;
+
+}
+
+.dot-img-add::after{
+  display: none;
+}
+
+}
