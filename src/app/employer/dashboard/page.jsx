@@ -9,7 +9,7 @@ import { parseISO, addDays, isAfter, format } from "date-fns";
 import axios from "axios";
 import { HiDotsVertical, HiTrash } from "react-icons/hi";
 import { useRouter, usePathname } from "next/navigation";
-import Swal from "sweetalert2"; // Import SweetAlert2
+import Swal from "sweetalert2"; 
 
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react"; // For dropdown menu, install @headlessui/react
 
@@ -678,10 +678,10 @@ const NewJobCard = ({ job, setJobs }) => {
           </div>
         </div>
 
-        <div className="w-[15%] flex flex-col justify-start">
+        {/* <div className="w-[15%] flex flex-col justify-start">
           <strong>65796</strong>
           <span className="text-md text-slate-600">Applied to job</span>
-        </div>
+        </div> */}
 
         <div className="w-[15%] flex flex-col justify-start">
           <strong>{job?.matches || 0}</strong>

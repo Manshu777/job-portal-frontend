@@ -46,7 +46,7 @@ export default function Page() {
     preferred_language: "",
     skills: [],
     password: "",
-     english_level:"",
+    english_level: "",
     highest_education: "",
     education_level: "",
     specialization: "",
@@ -57,14 +57,11 @@ export default function Page() {
     preferred_locations: [],
     state: "",
     city: "",
-
-    
   });
 
-
   const [resume, setResume] = useState();
- const [nextlen, setnextlen] = useState(1);
-const [errors, setErrors] = useState({}); // State to track validation errors
+  const [nextlen, setnextlen] = useState(1);
+  const [errors, setErrors] = useState({}); // State to track validation errors
   const [isStepValid, setIsStepValid] = useState(false); //
 
   const validateStep = (step) => {
@@ -100,22 +97,14 @@ const [errors, setErrors] = useState({}); // State to track validation errors
         newErrors.city = "City is required";
         isValid = false;
       }
-
-
-
-      
     } else if (step === 3) {
-      
       if (!alldata?.highest_education) {
         newErrors.highest_education = "Highest education is required";
         isValid = false;
       }
     } else if (step === 4) {
-      
     } else if (step === 5) {
-     
     } else if (step === 6) {
-      
       if (alldata?.skills?.length === 0) {
         newErrors.skills = "At least one skill is required";
         isValid = false;
@@ -132,7 +121,7 @@ const [errors, setErrors] = useState({}); // State to track validation errors
   };
 
   // Re-validate step whenever alldata or resume changes
- 
+
   // useEffect(() => {
   //   validateStep(nextlen);
   // }, [nextlen]);
@@ -164,8 +153,6 @@ const [errors, setErrors] = useState({}); // State to track validation errors
     }
   };
 
- 
-
   const handelinputs = (e) => {
     const { name, value } = e.target;
     setalldata((prevData) => ({
@@ -178,34 +165,27 @@ const [errors, setErrors] = useState({}); // State to track validation errors
     setalldata({ ...alldata, gender });
   };
 
-  const handleNext = async () => {
-    const userData = {
-      full_name: fullName,
-      dob,
-      gender: selectedGender,
-      number,
-    };
-
-    const token = localStorage.getItem("port_tok");
-    const response = await axios.post(
-      `${baseurl}/candidate-educations/${token}`,
-      userData
-    );
-    router.push("/candidate/educations");
-  };
-
   const handelcheckbox = (key, value) => {
     setalldata({ ...alldata, [key]: value });
   };
 
   const handelSubmit = async () => {
-    const formData = new FormData();
+    let token;
+    if (typeof window !== "undefined") {
+      token = localStorage?.getItem("port_tok") || alldata?.token;
+    }
 
+    if (!token) {
+      console.error("No token found, redirecting or handling error");
+      router.push("/"); // Redirect to login or handle appropriately
+      return;
+    }
+
+    const formData = new FormData();
     Object.entries(alldata).forEach(([key, value]) => {
       if (value === undefined || value === null) {
         formData.append(key, "");
       } else if (key === "skills" && Array.isArray(value)) {
-        // Append each skill individually
         value.forEach((skill) => {
           formData.append(`${key}[]`, skill);
         });
@@ -218,51 +198,73 @@ const [errors, setErrors] = useState({}); // State to track validation errors
       formData.append("resume", resume);
     }
 
-    const token = localStorage.getItem("port_tok") || alldata?.token;
-    console.log(alldata?.token, "this is token");
-    const response = await axios.post(
-      `${baseurl}/updatecandidate/${token}`,
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    try {
+      const response = await axios.post(
+        `${baseurl}/updatecandidate/${token}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.data.success) {
+        Swal.fire({
+          title: "Submit Success",
+          text: "You clicked the button!",
+          icon: "success",
+        });
+        router.push("/candidate/dashboard");
+      } else {
+        Swal.fire({
+          title: "Submit Error",
+          text: "Failed to update candidate data.",
+          icon: "error",
+        });
       }
-    );
-    if (response.data.success) {
-      Swal.fire({
-        title: "Submit Success",
-        text: "You clicked the button!",
-        icon: "success",
-      });
-
-      router.push("/candidate/dashboard");
-    } else {
+    } catch (error) {
+      console.error("Error in handelSubmit:", error);
       Swal.fire({
         title: "Submit Error",
-        text: "You clicked the button!",
+        text: "An error occurred while submitting.",
         icon: "error",
       });
     }
   };
 
-  const getcondidate = async (token) => {
-    if (!token) {
-      // router.push("/")
-    } else {
-      const response = await axios.get(`${baseurl}/candidateinfo/${token}`,
-    {    headers: {
-          Authorization: `Bearer ${token}`,
-        },}
-      );
-      if (response.data.success) {
-        setalldata(response.data.candidate);
+  useEffect(() => {
+    const getcondidate = async (token) => {
+      if (!token) {
+        router.push("/");
+        return;
       }
+      try {
+        const response = await axios.get(`${baseurl}/candidateinfo/${token}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.data.success) {
+          setalldata(response.data.candidate);
+        }
+      } catch (error) {
+        console.error("Error fetching candidate data:", error);
+        router.push("/");
+      }
+    };
+
+    if (typeof window !== "undefined") {
+      const token = localStorage?.getItem("port_tok");
+      getcondidate(token);
     }
-  };
+  }, [router]);
 
   useEffect(() => {
-    const token = localStorage.getItem("port_tok");
+    let token;
+    if (typeof window !== "undefined") {
+      token = localStorage?.getItem("port_tok");
+    }
+
     getcondidate(token);
   }, []);
 
@@ -294,9 +296,9 @@ const [errors, setErrors] = useState({}); // State to track validation errors
   return (
     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-5 md:px-12 xl:px-24 py-10 lg:py-14">
       <div className="w-full lg:w-[90%] mx-auto flex flex-col lg:flex-row gap-10">
-        {/* Left Section - Visual Content */}
+     
         <div className="w-full lg:w-1/2 flex flex-col gap-6">
-          {/* Main Hero Image */}
+        
           <div className="relative rounded-3xl overflow-hidden group">
             <img
               src="https://images.unsplash.com/photo-1521791055366-0d553872125f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80"
@@ -315,7 +317,7 @@ const [errors, setErrors] = useState({}); // State to track validation errors
             </div>
           </div>
 
-          {/* Job Type Cards */}
+       
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white p-4 rounded-2xl shadow-md hover:shadow-lg transition-shadow">
               <div className="h-32 overflow-hidden rounded-xl mb-3">
@@ -350,9 +352,8 @@ const [errors, setErrors] = useState({}); // State to track validation errors
                 {[1, 2, 3, 4, 5].map((step) => (
                   <div
                     key={step}
-                    className={`w-3 h-3 rounded-full transition-all ${
-                      nextlen === step ? "bg-white" : "bg-white/30"
-                    }`}
+                    className={`w-3 h-3 rounded-full transition-all ${nextlen === step ? "bg-white" : "bg-white/30"
+                      }`}
                   />
                 ))}
               </div>
@@ -367,7 +368,7 @@ const [errors, setErrors] = useState({}); // State to track validation errors
                 alldata={alldata}
                 handelinputs={handelinputs}
                 handelgender={handelgender}
-                errors={errors} 
+                errors={errors}
               />
             )}
             {nextlen === 2 && (
@@ -375,7 +376,7 @@ const [errors, setErrors] = useState({}); // State to track validation errors
                 alldata={alldata}
                 handelinputs={handelinputs}
                 handelgender={handelgender}
-                errors={errors} 
+                errors={errors}
               />
             )}
             {nextlen === 3 && (
@@ -383,7 +384,7 @@ const [errors, setErrors] = useState({}); // State to track validation errors
                 alldata={alldata}
                 handelinputs={handelinputs}
                 handelgender={handelgender}
-                errors={errors} 
+                errors={errors}
               />
             )}
             {nextlen === 4 && (
@@ -391,7 +392,7 @@ const [errors, setErrors] = useState({}); // State to track validation errors
                 alldata={alldata}
                 handelinputs={handelinputs}
                 handelcheckbox={handelcheckbox}
-                errors={errors} 
+                errors={errors}
               />
             )}
             {nextlen === 5 && (
@@ -403,7 +404,7 @@ const [errors, setErrors] = useState({}); // State to track validation errors
                 handelgender={handelgender}
                 addskilles={addskilles}
                 setalldata={setalldata}
-                errors={errors} 
+                errors={errors}
               />
             )}
           </div>
@@ -413,11 +414,10 @@ const [errors, setErrors] = useState({}); // State to track validation errors
             <button
               disabled={nextlen === 1}
               onClick={() => setnextlen(nextlen - 1)}
-              className={`flex items-center px-6 py-3 rounded-lg font-medium transition-all ${
-                nextlen === 1
-                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                  : "bg-blue-100 text-blue-700 hover:bg-blue-200"
-              }`}
+              className={`flex items-center px-6 py-3 rounded-lg font-medium transition-all ${nextlen === 1
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                }`}
             >
               <FiChevronLeft className="w-5 h-5 mr-2" />
               Previous

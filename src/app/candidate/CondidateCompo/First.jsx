@@ -12,7 +12,7 @@ const First = ({ alldata, handelinputs, handelgender,errors }) => {
   const [selectedState, setSelectedState] = useState(null);
   const [selectedCity, setSelectedCity] = useState(null);
 
-  // Fetch Indian states when component mounts
+
   useEffect(() => {
     const indiaStates = State.getStatesOfCountry("IN").map((state) => ({
       value: state.isoCode,
@@ -21,7 +21,7 @@ const First = ({ alldata, handelinputs, handelgender,errors }) => {
     setStates(indiaStates);
   }, []);
 
-  // Fetch cities when a state is selected
+
   useEffect(() => {
     if (selectedState) {
       const stateCities = City.getCitiesOfState("IN", selectedState.value).map((city) => ({
@@ -36,7 +36,7 @@ const First = ({ alldata, handelinputs, handelgender,errors }) => {
     }
   }, [selectedState]);
 
-  // Handle state selection
+
   const handleStateChange = (selectedOption) => {
     setSelectedState(selectedOption);
     handelinputs({
@@ -47,7 +47,7 @@ const First = ({ alldata, handelinputs, handelgender,errors }) => {
     });
   };
 
-  // Handle city selection
+
   const handleCityChange = (selectedOption) => {
     setSelectedCity(selectedOption);
     handelinputs({
@@ -92,7 +92,7 @@ const First = ({ alldata, handelinputs, handelgender,errors }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
       <div className="p-6 space-y-6">
-        {/* Full Name Field */}
+
         <div className="animate-fade-in">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Full Name
@@ -112,7 +112,7 @@ const First = ({ alldata, handelinputs, handelgender,errors }) => {
           </div>
         </div>
 
-        {/* Date of Birth Field */}
+
         <div className="animate-fade-in">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Date of Birth
@@ -133,7 +133,7 @@ const First = ({ alldata, handelinputs, handelgender,errors }) => {
           </div>
         </div>
 
-        {/* Gender Field */}
+
         <div className="animate-fade-in">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Gender
@@ -159,7 +159,7 @@ const First = ({ alldata, handelinputs, handelgender,errors }) => {
         )}
         </div>
 
-        {/* Phone Number Field */}
+
         <div className="animate-fade-in">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Phone Number
@@ -187,14 +187,14 @@ const First = ({ alldata, handelinputs, handelgender,errors }) => {
           </label>
           <Select
             options={states}
-  value={selectedState}
-  onChange={handleStateChange}
-  placeholder="Select State"
-  styles={customStyles}
-  isClearable
-  className="text-gray-700"
-  menuPortalTarget={document.body} // Render the menu directly under <body>
-  
+          value={selectedState}
+          onChange={handleStateChange}
+          placeholder="Select State"
+          styles={customStyles}
+          isClearable
+          className="text-gray-700"
+
+      
           />
 
            {errors.state && (
@@ -215,7 +215,7 @@ const First = ({ alldata, handelinputs, handelgender,errors }) => {
             styles={customStyles}
             isClearable
             isDisabled={!selectedState}
-            menuPortalTarget={document.body}
+
             className="text-gray-700"
           />
 
