@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Filter, X } from "lucide-react";
-import { jobsData } from "../data/jobs"; // Adjust import path if necessary (e.g., ../../data/jobs)
+import { jobsData } from "../data/jobs";
 
 export default function JobFilters({ filters, setFilters, setFilteredJobs }) {
   const [experienceLevels, setExperienceLevels] = useState([]);

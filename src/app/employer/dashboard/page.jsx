@@ -17,6 +17,12 @@ const EmployerDashboard = () => {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false); // Modal visibility
+  const [selectedFiles, setSelectedFiles] = useState({
+    other_certificate: null,
+  });
+  const [companies, setCompanies] = useState([]);
+  const [SelectedCompany, setSelectedCompany] = useState([]);
   const [isVisible, setIsVisible] = useState(true);
   const [jobs, setJobs] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -79,6 +85,20 @@ const EmployerDashboard = () => {
     fetchJobs();
   }, [isLoggedIn.id]);
 
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const response = await axios.get(`${baseurl}/getall/companies`);
+        const FiltereData = response.data.data.filter(
+          (p) => p.employer_id == isLoggedIn.id
+        );
+        console.log(FiltereData);
+        setCompanies(FiltereData);
+      } catch (error) {}
+    };
+    fetchCompanies();
+  }, [isLoggedIn]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -91,13 +111,58 @@ const EmployerDashboard = () => {
     setIsJobModalOpen(false);
   };
 
+  const handleFileChange = (event) => {
+    const { name, files } = event.target;
+    setSelectedFiles({
+      ...selectedFiles,
+      [name]: files[0],
+    });
+  };
+
+  const handleSubmitdocs = async (event) => {
+    event.preventDefault();
+
+    const formData = new FormData();
+    if (selectedFiles.other_certificate) {
+      formData.append("id", SelectedCompany.id);
+      formData.append("other_certificate", selectedFiles.other_certificate);
+    }
+
+    try {
+      const response = await axios.post(`${baseurl}/update-docs`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.status === 200) {
+        alert("Documents updated successfully!");
+      } else {
+        alert("Failed to update documents.");
+      }
+    } catch (error) {
+      console.error("Error updating documents:", error);
+      alert("An error occurred while updating documents.");
+    }
+    setIsModalOpen(false);
+  };
+
+  const handleSelectChange = (event) => {
+    const companyId = event.target.value;
+    const selectedCompany = companies.find(
+      (company) => company.id === parseInt(companyId)
+    );
+
+    setSelectedCompany(selectedCompany);
+  };
+
   if (
     isLoggedIn.is_verified === 0 ||
     isLoggedIn.is_verified === null ||
     isLoggedIn.is_blocked === 1
   ) {
     return (
-      <div className="flex h-screen bg-gradient-to-br from-gray-100 to-gray-200">
+      <div className="flex py-20 sm:py-40 bg-gradient-to-br from-gray-100 to-gray-200">
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="bg-white max-w-lg w-full p-8 rounded-2xl shadow-xl transform transition-all animate-fadeIn">
             <div className="flex items-center justify-center mb-6">
@@ -137,6 +202,75 @@ const EmployerDashboard = () => {
               </div>
             )}
             <div className="flex justify-center gap-4">
+              {isVisible && (
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="px-6 py-3 bg-[#02325a] text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-300"
+                >
+                  Update Documents
+                </button>
+              )}
+              {isModalOpen && (
+                <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex justify-center items-center z-50">
+                  <div className="bg-white p-6 rounded-2xl shadow-lg w-full sm:w-7xl max-w-lg">
+                    <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
+                      Update Documents
+                    </h2>
+
+                    <form onSubmit={handleSubmitdocs}>
+                      <div className="mb-6">
+                        <label className="block text-gray-700 font-semibold mb-1">
+                          Select Company
+                        </label>
+                        <select
+                          className="mt-2 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          onChange={handleSelectChange}
+                          value={SelectedCompany ? SelectedCompany.id : ""}
+                        >
+                          <option value="" disabled>
+                            Select a company
+                          </option>
+                          {companies.map((company) => (
+                            <option key={company.id} value={company.id}>
+                              {company.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="mb-6">
+                        <label className="block text-gray-700 font-semibold mb-1">
+                          GST Certificate (PDF) / Company PAN Card (PDF) /
+                          Other's Document (PDF)
+                        </label>
+                        <input
+                          type="file"
+                          name="other_certificate"
+                          accept=".pdf"
+                          onChange={handleFileChange}
+                          className="mt-4 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div className="flex justify-end space-x-4">
+                        <button
+                          type="button"
+                          onClick={() => setIsModalOpen(false)} // Close modal
+                          className="px-6 py-3 bg-gray-400 text-white rounded-lg hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          Submit
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
               {!isVisible && (
                 <a
                   href="/employer/verify-status" // Replace with your verification status page URL
