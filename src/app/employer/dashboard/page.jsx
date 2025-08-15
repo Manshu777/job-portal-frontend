@@ -9,7 +9,7 @@ import { parseISO, addDays, isAfter, format } from "date-fns";
 import axios from "axios";
 import { HiDotsVertical, HiTrash } from "react-icons/hi";
 import { useRouter, usePathname } from "next/navigation";
-import Swal from "sweetalert2"; 
+import Swal from "sweetalert2";
 
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react"; // For dropdown menu, install @headlessui/react
 
@@ -18,6 +18,7 @@ const EmployerDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false); // Modal visibility
+  const [SuccessModel, setSuccessModel] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState({
     other_certificate: null,
   });
@@ -134,17 +135,15 @@ const EmployerDashboard = () => {
           "Content-Type": "multipart/form-data",
         },
       });
-
       if (response.status === 200) {
-        alert("Documents updated successfully!");
+        setIsModalOpen(false);
+        setSuccessModel(true);
       } else {
         alert("Failed to update documents.");
       }
     } catch (error) {
       console.error("Error updating documents:", error);
-      alert("An error occurred while updating documents.");
     }
-    setIsModalOpen(false);
   };
 
   const handleSelectChange = (event) => {
@@ -267,6 +266,29 @@ const EmployerDashboard = () => {
                         </button>
                       </div>
                     </form>
+                  </div>
+                </div>
+              )}
+
+              {SuccessModel && (
+                <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] bg-opacity-50 flex justify-center items-center z-50">
+                  <div className="bg-white p-8 rounded-lg shadow-lg w-full sm:w-7xl max-w-lg">
+                    <h2 className="text-2xl font-semibold text-green-600 text-center mb-4">
+                      Documents Updated Successfully
+                    </h2>
+                    <p className="text-center text-gray-600 mb-6">
+                      Your documents have been updated successfully. You can now
+                      proceed.
+                    </p>
+
+                    <div className="flex justify-center">
+                      <a
+                        href="/"
+                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        Continue
+                      </a>
+                    </div>
                   </div>
                 </div>
               )}
