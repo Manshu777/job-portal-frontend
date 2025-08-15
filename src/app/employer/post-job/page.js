@@ -17,7 +17,7 @@ const Page = () => {
 
   useEffect(() => {
     const checkLogin = async () => {
-      const token = localStorage.getItem('employerToken')
+      const token = localStorage?.getItem('employerToken')
       if (!token) {
         setIsLoggedIn(null)
         return

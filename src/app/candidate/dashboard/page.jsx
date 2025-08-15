@@ -90,7 +90,7 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("port_tok");
+    const token = localStorage?.getItem("port_tok");
     fetchData(token);
   }, []);
 
@@ -131,7 +131,7 @@ const Dashboard = () => {
 
   const saveChanges = async () => {
     try {
-      const token = localStorage.getItem("port_tok");
+      const token = localStorage?.getItem("port_tok");
       // Ensure job_roles and skills are sent as JSON strings
       const payload = {
         ...tempData,

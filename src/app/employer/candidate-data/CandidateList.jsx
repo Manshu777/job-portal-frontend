@@ -72,7 +72,7 @@ const CandidateCard = ({ candidate }) => {
         `${baseurl}/reveal-number`,
         { candidate_id: candidateId },
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem('employerToken')}` },
+          headers: { Authorization: `Bearer ${localStorage?.getItem('employerToken')}` },
         }
       );
       setPhoneNumber(response.data.number || 'N/A');
@@ -287,7 +287,7 @@ const CandidateList = () => {
       }).toString();
       console.log('queryParams:', queryParams);
       const response = await axios.get(`${baseurl}/filter?${queryParams}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('employerToken')}` }
+        headers: { Authorization: `Bearer ${localStorage?.getItem('employerToken')}` }
       });
       const { data, filters: filtersOptions, pagination: responsePagination } = response.data;
       setCandidates(data);
@@ -323,7 +323,7 @@ const CandidateList = () => {
 
   const revealNumber = (candidateId) => {
     axios.post(`${baseurl}/reveal-number`, { candidate_id: candidateId }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('employerToken')}` }
+      headers: { Authorization: `Bearer ${localStorage?.getItem('employerToken')}` }
     })
       .then(response => {
         setCandidates(candidates.map(candidate =>

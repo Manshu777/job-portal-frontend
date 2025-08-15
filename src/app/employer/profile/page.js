@@ -28,7 +28,7 @@ const EditEmployerProfile = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const token = localStorage.getItem('employerToken');
+      const token = localStorage?.getItem('employerToken');
       if (!token) {
         router.push('/login');
         return;
@@ -93,7 +93,7 @@ const EditEmployerProfile = () => {
     setFieldErrors({});
 
     try {
-      const token = localStorage.getItem('employerToken');
+      const token = localStorage?.getItem('employerToken');
       const formData = new FormData();
       
       // Append only non-empty fields to FormData

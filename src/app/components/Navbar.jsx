@@ -29,7 +29,7 @@ export default function Navbar() {
   
   useEffect(() => {
     const checkLogin = async () => {
-      const token = localStorage.getItem("employerToken") || localStorage.getItem("port_tok");
+      const token = localStorage?.getItem("employerToken") || localStorage?.getItem("port_tok");
       // console.log('wrefrf3f34',token)
       if (!token) {
         if (pathname !== "/") {
@@ -40,7 +40,7 @@ export default function Navbar() {
 
       try {
         const res = await axios.get(
-          `${baseurl}/${localStorage.getItem("employerToken") ? "employer/profile" : "candidateprofile"}`,
+          `${baseurl}/${localStorage?.getItem("employerToken") ? "employer/profile" : "candidateprofile"}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -61,8 +61,8 @@ export default function Navbar() {
         } 
         else {
           setIsLoggedIn(false);
-          localStorage.removeItem("employerToken");
-          // localStorage.removeItem("port_tok");
+          localStorage?.removeItem("employerToken");
+          // localStorage?.removeItem("port_tok");
           if (pathname !== "/") {
             // router.push("/"); // Navigate only if not on homepage
           }
@@ -70,8 +70,8 @@ export default function Navbar() {
       } catch (err) {
         console.error("Not logged in or invalid token", err);
         setIsLoggedIn(false);
-        localStorage.removeItem("employerToken");
-        // localStorage.removeItem("port_tok");
+        localStorage?.removeItem("employerToken");
+        // localStorage?.removeItem("port_tok");
         if (pathname !== "/") {
           // router.push("/"); // Navigate only if not on homepage
         }
@@ -94,7 +94,7 @@ export default function Navbar() {
     try {
       const endpoint = loginType === "Employer" ? "employer/send-otp" : "send-otp";
       const payload = loginType === "Employer" ? { contact_email: email } : { email };
-      localStorage.setItem("emp-email", email);
+      localStorage?.setItem("emp-email", email);
       const response = await axios.post(`${baseurl}/${endpoint}`, payload);
       console.log(response.data);
       setOtpSent(true);
@@ -129,7 +129,7 @@ export default function Navbar() {
         const sessionToken = response.data.session_token;
         console.log(sessionToken);
         if (sessionToken) {
-          localStorage.setItem("employerToken", sessionToken);
+          localStorage?.setItem("employerToken", sessionToken);
           setOtpSent(false);
           setShowModal(false);
           window.location.href = "/employer/dashboard";
@@ -141,7 +141,7 @@ export default function Navbar() {
       } else {
         const sessionToken = response.data.token;
         console.log("Session Token:", response.data);
-        localStorage.setItem("port_tok", sessionToken);
+        localStorage?.setItem("port_tok", sessionToken);
         setShowModal(false);
         setOtpSent(false);
         // Redirect based on whether profile is complete (doneprofile: 1) or not
@@ -190,7 +190,7 @@ export default function Navbar() {
 
       if (response.data.success) {
         const token = response.data.session_token;
-        localStorage.setItem("employerToken", token);
+        localStorage?.setItem("employerToken", token);
         setShowModal(false);
         window.location.href = "/employer/dashboard";
       } else {
@@ -219,7 +219,7 @@ export default function Navbar() {
       const responseData = await response.data;
       console.log(responseData.token)
       if (responseData.success) {
-        localStorage.setItem("port_tok", responseData?.token);
+        localStorage?.setItem("port_tok", responseData?.token);
         setShowModal(false);
         setLoginType("");
         router.push("/candidate/candidate-login");
@@ -235,8 +235,8 @@ export default function Navbar() {
 
   // Handle logout
   const handleLogout = () => {
-    localStorage.removeItem("employerToken");
-    // localStorage.removeItem("port_tok");
+    localStorage?.removeItem("employerToken");
+    // localStorage?.removeItem("port_tok");
     setIsLoggedIn(false);
     router.push("/");
   };

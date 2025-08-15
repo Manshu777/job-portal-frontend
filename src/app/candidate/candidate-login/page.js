@@ -186,7 +186,7 @@ const [errors, setErrors] = useState({}); // State to track validation errors
       number,
     };
 
-    const token = localStorage.getItem("port_tok");
+    const token = localStorage?.getItem("port_tok");
     const response = await axios.post(
       `${baseurl}/candidate-educations/${token}`,
       userData
@@ -218,7 +218,7 @@ const [errors, setErrors] = useState({}); // State to track validation errors
       formData.append("resume", resume);
     }
 
-    const token = localStorage.getItem("port_tok") || alldata?.token;
+    const token = localStorage?.getItem("port_tok") || alldata?.token;
     console.log(alldata?.token, "this is token");
     const response = await axios.post(
       `${baseurl}/updatecandidate/${token}`,
@@ -262,7 +262,7 @@ const [errors, setErrors] = useState({}); // State to track validation errors
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("port_tok");
+    const token = localStorage?.getItem("port_tok");
     getcondidate(token);
   }, []);
 

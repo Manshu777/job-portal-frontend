@@ -9,7 +9,7 @@ class CVGeneration extends React.Component {
     this.state = {
       currentStep: "templates",
       selectedTemplate: null,
-      cvData: this.loadFromLocalStorage() || {
+      cvData: this.loadFromlocalStorage?() || {
         personalInfo: {
           firstName: "",
           lastName: "",
@@ -62,21 +62,21 @@ class CVGeneration extends React.Component {
     }
   }
 
-  loadFromLocalStorage() {
+  loadFromlocalStorage?() {
     try {
-      const savedData = localStorage.getItem("cvData");
+      const savedData = localStorage?.getItem("cvData");
       return savedData ? JSON.parse(savedData) : null;
     } catch (error) {
-      console.error("Error loading from localStorage:", error);
+      console.error("Error loading from localStorage?:", error);
       return null;
     }
   }
 
-  saveToLocalStorage(data) {
+  saveTolocalStorage?(data) {
     try {
-      localStorage.setItem("cvData", JSON.stringify(data));
+      localStorage?.setItem("cvData", JSON.stringify(data));
     } catch (error) {
-      console.error("Error saving to localStorage:", error);
+      console.error("Error saving to localStorage?:", error);
     }
   }
 
@@ -105,7 +105,7 @@ class CVGeneration extends React.Component {
 
   handleDataChange(data) {
     this.setState({ cvData: data });
-    this.saveToLocalStorage(data);
+    this.saveTolocalStorage?(data);
     this.trackEvent("data_updated");
   }
 
@@ -135,7 +135,7 @@ class CVGeneration extends React.Component {
       customSections: [],
     };
     this.setState({ cvData: resetData, currentStep: "templates", selectedTemplate: null });
-    this.saveToLocalStorage(resetData);
+    this.saveTolocalStorage?(resetData);
     this.trackEvent("cv_reset");
   }
 

@@ -21,7 +21,7 @@ const EditJobPage = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const token = localStorage.getItem('employerToken');
+      const token = localStorage?.getItem('employerToken');
       if (!token) {
         Swal.fire({
           icon: 'error',
@@ -73,7 +73,7 @@ const EditJobPage = () => {
 
   // Handle form submission for updating the job
   const handleUpdateJob = async (formData) => {
-    const token = localStorage.getItem('employerToken');
+    const token = localStorage?.getItem('employerToken');
     if (!token) {
       Swal.fire({
         icon: 'error',

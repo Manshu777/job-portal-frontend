@@ -371,14 +371,14 @@ const MultiStepJobPostingForm = ({ userdata, companies }) => {
       const generatedText =
         response.data?.jobOverview?.trim() || "Failed to generate description.";
       console.log("respgeneratedTextonse", generatedText);
-      // Update form state and localStorage
+      // Update form state and localStorage?
 
       setFormData((prev) => ({
         ...prev,
         jobOverview: generatedText,
       }));
 
-      localStorage.setItem(
+      localStorage?.setItem(
         "jobPostingFormData",
         JSON.stringify({
           data: { ...formData, jobOverview: generatedText },
@@ -627,7 +627,7 @@ const MultiStepJobPostingForm = ({ userdata, companies }) => {
 
   useEffect(() => {
     const checkLogin = async () => {
-      const token = localStorage.getItem("employerToken");
+      const token = localStorage?.getItem("employerToken");
       if (!token) return;
 
       try {
@@ -696,7 +696,7 @@ const MultiStepJobPostingForm = ({ userdata, companies }) => {
   }, []);
 
   useEffect(() => {
-    const savedData = localStorage.getItem("jobPostingFormData");
+    const savedData = localStorage?.getItem("jobPostingFormData");
     if (savedData) {
       const { data, timestamp } = JSON.parse(savedData);
       const now = new Date().getTime();
@@ -724,7 +724,7 @@ const MultiStepJobPostingForm = ({ userdata, companies }) => {
           );
         }
       } else {
-        localStorage.removeItem("jobPostingFormData");
+        localStorage?.removeItem("jobPostingFormData");
       }
     }
   }, [jobRoleOptions]);
@@ -848,7 +848,7 @@ const fetchSpecializations = useCallback(async (courseName) => {
         ...(name === "course" ? { specialization: "" } : {}),
       }));
     }
-    localStorage.setItem(
+    localStorage?.setItem(
       "jobPostingFormData",
       JSON.stringify({
         data: {
@@ -899,7 +899,7 @@ const fetchSpecializations = useCallback(async (courseName) => {
       newSuggestions[index] = [];
       return newSuggestions;
     });
-    localStorage.setItem(
+    localStorage?.setItem(
       "jobPostingFormData",
       JSON.stringify({
         data: {
@@ -934,7 +934,7 @@ const fetchSpecializations = useCallback(async (courseName) => {
       newSuggestions[index] = [];
       return newSuggestions;
     });
-    localStorage.setItem(
+    localStorage?.setItem(
       "jobPostingFormData",
       JSON.stringify({
         data: {
@@ -1073,7 +1073,7 @@ const fetchSpecializations = useCallback(async (courseName) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem("employerToken");
+    const token = localStorage?.getItem("employerToken");
     if (!token) {
       setApiError("Please log in to submit a job posting.");
       return;
@@ -1253,7 +1253,7 @@ const fetchSpecializations = useCallback(async (courseName) => {
       setCurrentStep(1);
       setShowConfirmation(false);
       setShowNewCompanyFields(false);
-      localStorage.removeItem("jobPostingFormData");
+      localStorage?.removeItem("jobPostingFormData");
       setApiError(null);
     } catch (error) {
       if (error.response?.status === 422) {
@@ -1280,7 +1280,7 @@ const fetchSpecializations = useCallback(async (courseName) => {
           ...prev,
           requiredSkills: [...prev.requiredSkills, newSkill],
         }));
-        localStorage.setItem(
+        localStorage?.setItem(
           "jobPostingFormData",
           JSON.stringify({
             data: {
@@ -1331,7 +1331,7 @@ const fetchSpecializations = useCallback(async (courseName) => {
         ...prev,
         jobOverview: prettyHTML,
       }));
-      localStorage.setItem(
+      localStorage?.setItem(
         "jobPostingFormData",
         JSON.stringify({
           data: {
@@ -1414,7 +1414,7 @@ const fetchSpecializations = useCallback(async (courseName) => {
     setCitySearch(city.name);
     setCitySuggestions([]);
     fetchAreaSuggestions(city.city_id);
-    localStorage.setItem(
+    localStorage?.setItem(
       "jobPostingFormData",
       JSON.stringify({
         data: {
@@ -1445,7 +1445,7 @@ const fetchSpecializations = useCallback(async (courseName) => {
       ...prev,
       locations: values,
     }));
-    localStorage.setItem(
+    localStorage?.setItem(
       "jobPostingFormData",
       JSON.stringify({
         data: {
@@ -1470,8 +1470,8 @@ const fetchSpecializations = useCallback(async (courseName) => {
     setFilteredJobRoleOptions(newJobRoleOptions);
     setShowJobRoleDropdown(newJobRoleOptions.length > 0);
     setJobRoleSearch("");
-    // Save to localStorage
-    localStorage.setItem(
+    // Save to localStorage?
+    localStorage?.setItem(
       "jobPostingFormData",
       JSON.stringify({
         data: {
@@ -1497,8 +1497,8 @@ const fetchSpecializations = useCallback(async (courseName) => {
       jobRole: "", // Clear any existing error
     }));
 
-    // Save to localStorage
-    localStorage.setItem(
+    // Save to localStorage?
+    localStorage?.setItem(
       "jobPostingFormData",
       JSON.stringify({
         data: {
@@ -2093,7 +2093,7 @@ const renderStepContent = () => {
                         course: courseName,
                         specialization: "",
                       }));
-                      localStorage.setItem(
+                      localStorage?.setItem(
                         "jobPostingFormData",
                         JSON.stringify({
                           data: {
@@ -2118,7 +2118,7 @@ const renderStepContent = () => {
                           course: newCourse,
                           specialization: "",
                         }));
-                        localStorage.setItem(
+                        localStorage?.setItem(
                           "jobPostingFormData",
                           JSON.stringify({
                             data: {
@@ -2699,7 +2699,7 @@ const renderStepContent = () => {
                     ? selected.map((option) => option.value)
                     : [];
                   setFormData((prev) => ({ ...prev, requiredSkills: values }));
-                  localStorage.setItem(
+                  localStorage?.setItem(
                     "jobPostingFormData",
                     JSON.stringify({
                       data: { ...formData, requiredSkills: values },
@@ -2717,7 +2717,7 @@ const renderStepContent = () => {
                       ...prev,
                       requiredSkills: [...prev.requiredSkills, newSkill],
                     }));
-                    localStorage.setItem(
+                    localStorage?.setItem(
                       "jobPostingFormData",
                       JSON.stringify({
                         data: {
