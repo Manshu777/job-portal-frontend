@@ -232,41 +232,30 @@ export default function Page() {
     }
   };
 
-  useEffect(() => {
-    const getcondidate = async (token) => {
-      if (!token) {
-        router.push("/");
-        return;
-      }
-      try {
-        const response = await axios.get(`${baseurl}/candidateinfo/${token}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (response.data.success) {
-          setalldata(response.data.candidate);
-        }
-      } catch (error) {
-        console.error("Error fetching candidate data:", error);
-        router.push("/");
-      }
-    };
-
-    if (typeof window !== "undefined") {
-      const token = localStorage?.getItem("port_tok");
-      getcondidate(token);
+ const getcondidate = async (token) => {
+  if (!token) {
+    router.push("/");
+    return;
+  }
+  try {
+    const response = await axios.get(`${baseurl}/candidateinfo/${token}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (response.data.success) {
+      setalldata(response.data.candidate);
     }
-  }, [router]);
+  } catch (error) {
+    console.error("Error fetching candidate data:", error);
+    router.push("/");
+  }
+};
 
-  useEffect(() => {
-    let token;
-    if (typeof window !== "undefined") {
-      token = localStorage?.getItem("port_tok");
-    }
-
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    const token = localStorage?.getItem("port_tok");
     getcondidate(token);
-  }, []);
+  }
+}, [router]);
 
   const addskilles = (skill) => {
     if (
