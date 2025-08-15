@@ -32,7 +32,7 @@ const MyJobs = () => {
 
   useEffect(() => {
     const checkLogin = async () => {
-      const token = localStorage?.getItem("employerToken");
+      const token = localStorage.getItem("employerToken");
       if (!token) return;
 
       try {
@@ -211,7 +211,7 @@ const handleDeleteJob = async () => {
   if (!result.isConfirmed) return;
 
   try {
-    const token = localStorage?.getItem("employerToken");
+    const token = localStorage.getItem("employerToken");
     if (!token) {
       Swal.fire({
         icon: "error",
@@ -258,7 +258,7 @@ const handleDeleteJob = async () => {
 const handleRefreshJob = async () => {
 
   try {
-    const token = localStorage?.getItem("employerToken");
+    const token = localStorage.getItem("employerToken");
     if (!token) {
       Swal.fire({
         icon: "error",

@@ -27,7 +27,7 @@ const ManageCompanies = () => {
 
   useEffect(() => {
     const fetchCompanies = async () => {
-      const token = localStorage?.getItem('employerToken');
+      const token = localStorage.getItem('employerToken');
       if (!token) {
         router.push('/login');
         return;
@@ -66,7 +66,7 @@ const ManageCompanies = () => {
     setSuccess(null);
 
     try {
-      const token = localStorage?.getItem('employerToken');
+      const token = localStorage.getItem('employerToken');
       const formData = new FormData();
       formData.append('name', companyFormData.name);
       formData.append('company_location', companyFormData.company_location);

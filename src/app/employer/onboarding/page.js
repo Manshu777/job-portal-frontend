@@ -41,7 +41,7 @@ export default function Page() {
 const [sessionToken, setSessionToken] = useState(null);
   // Replace with actual session_token source
 useEffect(() => {
-    const token = localStorage?.getItem('employerToken');
+    const token = localStorage.getItem('employerToken');
     setSessionToken(token);
   }, []); // Empty dependency array ensures this runs once on mount
 
@@ -79,7 +79,7 @@ const handleSubmit = async (e) => {
       return;
     }
 
-    const getEmail = localStorage?.getItem("emp-email");
+    const getEmail = localStorage.getItem("emp-email");
     // Create FormData object for multipart/form-data request
     const payload = new FormData();
     payload.append("name", formData.fullName);
@@ -107,7 +107,7 @@ const handleSubmit = async (e) => {
         },
       });
       console.log("Signup successful:", response.data);
-      localStorage?.setItem("employerToken", response.data.token);
+      localStorage.setItem("employerToken", response.data.token);
 
       await Swal.fire({
         icon: "success",
