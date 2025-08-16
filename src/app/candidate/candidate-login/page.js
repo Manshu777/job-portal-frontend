@@ -55,8 +55,10 @@ export default function Page() {
     school_medium: "",
     preferred_job_titles: [],
     preferred_locations: [],
+    preferred_languages: [],
     state: "",
     city: "",
+    experience_level: ''
   });
 
   const [resume, setResume] = useState();
@@ -183,11 +185,16 @@ export default function Page() {
 
     const formData = new FormData();
     Object.entries(alldata).forEach(([key, value]) => {
+      // List of fields that should be treated as arrays
+      const arrayFields = ['skills', 'preferred_job_titles', 'preferred_languages', 'preferred_locations'];
+
       if (value === undefined || value === null) {
         formData.append(key, "");
-      } else if (key === "skills" && Array.isArray(value)) {
-        value.forEach((skill) => {
-          formData.append(`${key}[]`, skill);
+      } else if (arrayFields.includes(key)) {
+        // Handle array fields
+        let values = Array.isArray(value) ? value : (typeof value === 'string' && value ? value.split(',').map(item => item.trim()) : []);
+        values.forEach((item) => {
+          formData.append(`${key}[]`, item);
         });
       } else {
         formData.append(key, value);
@@ -232,30 +239,30 @@ export default function Page() {
     }
   };
 
- const getcondidate = async (token) => {
-  if (!token) {
-    router.push("/");
-    return;
-  }
-  try {
-    const response = await axios.get(`${baseurl}/candidateinfo/${token}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (response.data.success) {
-      setalldata(response.data.candidate);
+  const getcondidate = async (token) => {
+    if (!token) {
+      router.push("/");
+      return;
     }
-  } catch (error) {
-    console.error("Error fetching candidate data:", error);
-    router.push("/");
-  }
-};
+    try {
+      const response = await axios.get(`${baseurl}/candidateinfo/${token}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.data.success) {
+        setalldata(response.data.candidate);
+      }
+    } catch (error) {
+      console.error("Error fetching candidate data:", error);
+      router.push("/");
+    }
+  };
 
-useEffect(() => {
-  if (typeof window !== "undefined") {
-    const token = localStorage?.getItem("port_tok");
-    getcondidate(token);
-  }
-}, [router]);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage?.getItem("port_tok");
+      getcondidate(token);
+    }
+  }, [router]);
 
   const addskilles = (skill) => {
     if (
@@ -285,9 +292,9 @@ useEffect(() => {
   return (
     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-5 md:px-12 xl:px-24 py-10 lg:py-14">
       <div className="w-full lg:w-[90%] mx-auto flex flex-col lg:flex-row gap-10">
-     
+
         <div className="w-full lg:w-1/2 flex flex-col gap-6">
-        
+
           <div className="relative rounded-3xl overflow-hidden group">
             <img
               src="https://images.unsplash.com/photo-1521791055366-0d553872125f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80"
@@ -306,7 +313,7 @@ useEffect(() => {
             </div>
           </div>
 
-       
+
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white p-4 rounded-2xl shadow-md hover:shadow-lg transition-shadow">
               <div className="h-32 overflow-hidden rounded-xl mb-3">

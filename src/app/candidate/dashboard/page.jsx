@@ -67,6 +67,7 @@ const Dashboard = () => {
   const [newJobRole, setNewJobRole] = useState(""); // Added for job_roles input
   const [error, setError] = useState(""); // Added for error handling
 
+  const storageLink = 'http://localhost:8000/storage'
   const fetchData = async (token) => {
     if (!token) {
       router.push("/");
@@ -739,6 +740,8 @@ const Dashboard = () => {
             </div>
           </div>
         )}
+
+      {  console.log('userData?.resume',userData?.resume)}
         {activeTab === "CV-Builder" && (
           <div className="bg-white rounded-xl shadow-sm p-4">
             {userData?.resume ? (
@@ -788,7 +791,7 @@ const Dashboard = () => {
             </button>
             <div className="w-full h-[90vh]">
               <iframe
-                src="http://147.93.18.63:8000/storage/pdf/qcUtUhAaO43fIzUhfnuWfMlhaQJUEYla5UCkLxa2.pdf"
+                src={`${storageLink}/${userData?.resume}`}
                 width="100%"
                 height="100%"
                 className="rounded-b-lg"
@@ -879,16 +882,16 @@ const StatCard = ({ title, value, icon, progress }) => (
 // Helper functions
 const calculateCompletion = (data) => {
   const fields = [
-    data.full_name,
-    data.dob,
-    data.gender,
-    data.number,
-    data.degree,
-    data.college_name,
-    data.job_title,
-    data.company_name,
-    data.job_roles.length > 0,
-    data.skills.length > 0,
+    data?.full_name,
+    data?.dob,
+    data?.gender,
+    data?.number,
+    data?.degree,
+    data?.college_name,
+    data?.job_title,
+    data?.company_name,
+    data?.job_roles?.length > 0,
+    data?.skills.length > 0,
   ];
   const filledFields = fields.filter((field) => Boolean(field)).length;
   return Math.round((filledFields / fields.length) * 100);

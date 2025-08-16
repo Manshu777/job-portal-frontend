@@ -3,8 +3,14 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { useRouter,usePathname } from "next/navigation";
-import { FaEnvelope, FaLock, FaSpinner, FaTimes, FaUserCircle } from "react-icons/fa";
+import { useRouter, usePathname } from "next/navigation";
+import {
+  FaEnvelope,
+  FaLock,
+  FaSpinner,
+  FaTimes,
+  FaUserCircle,
+} from "react-icons/fa";
 import { RiLockPasswordFill } from "react-icons/ri";
 import { baseurl } from "./common";
 import { FaCoins } from "react-icons/fa6";
@@ -21,59 +27,64 @@ export default function Navbar() {
   const [error, setError] = useState("");
   const [useOtpLogin, setUseOtpLogin] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userType, setUserType] = useState(null); // New state to track user type
   const router = useRouter();
   const pathname = usePathname();
-  const [usercred,setusercred] = useState()
+  const [usercred, setusercred] = useState();
   const [showCredits, setShowCredits] = useState(false);
-  
-  
+
   useEffect(() => {
     const checkLogin = async () => {
-      const token = localStorage.getItem("employerToken") || localStorage.getItem("port_tok");
-      // console.log('wrefrf3f34',token)
-      if (!token) {
+      const employerToken = localStorage.getItem("employerToken");
+      const candidateToken = localStorage.getItem("port_tok");
+
+      if (!employerToken && !candidateToken) {
+        setIsLoggedIn(false);
+        setUserType(null);
         if (pathname !== "/") {
-          
+          // router.push("/"); // Uncomment if navigation is needed
         }
         return;
       }
 
       try {
-        const res = await axios.get(
-          `${baseurl}/${localStorage.getItem("employerToken") ? "employer/profile" : "candidateprofile"}`,
-          {
+        let res;
+        if (employerToken) {
+          res = await axios.get(`${baseurl}/employer/profile`, {
             headers: {
-              Authorization: `Bearer ${token}`,
+              Authorization: `Bearer ${employerToken}`,
             },
-          }
-        );
+          });
+          setUserType("Employer");
+          setusercred(res?.data?.data?.credits || null);
+        } else if (candidateToken) {
+          res = await axios.get(`${baseurl}/candidateprofile`, {
+            headers: {
+              Authorization: `Bearer ${candidateToken}`,
+            },
+          });
+          setUserType("Candidate");
+        }
 
-
-
-        setusercred(res?.data.data.credits)
-       
-
-
-        if (res.data && res.data.success) {
+        if (res.data && (res.data.success || res.data.doneprofile === 1)) {
           setIsLoggedIn(true);
-        } else if (res.data.doneprofile === 1){
-            setIsLoggedIn(true);
-        } 
-        else {
+        } else {
           setIsLoggedIn(false);
+          setUserType(null);
           localStorage.removeItem("employerToken");
-          // localStorage.removeItem("port_tok");
+          localStorage.removeItem("port_tok");
           if (pathname !== "/") {
-            // router.push("/"); // Navigate only if not on homepage
+            // router.push("/"); // Uncomment if navigation is needed
           }
         }
       } catch (err) {
         console.error("Not logged in or invalid token", err);
         setIsLoggedIn(false);
+        setUserType(null);
         localStorage.removeItem("employerToken");
-        // localStorage.removeItem("port_tok");
+        localStorage.removeItem("port_tok");
         if (pathname !== "/") {
-          // router.push("/"); // Navigate only if not on homepage
+          // router.push("/"); // Uncomment if navigation is needed
         }
       }
     };
@@ -92,8 +103,10 @@ export default function Navbar() {
     }
 
     try {
-      const endpoint = loginType === "Employer" ? "employer/send-otp" : "send-otp";
-      const payload = loginType === "Employer" ? { contact_email: email } : { email };
+      const endpoint =
+        loginType === "Employer" ? "employer/send-otp" : "send-otp";
+      const payload =
+        loginType === "Employer" ? { contact_email: email } : { email };
       localStorage.setItem("emp-email", email);
       const response = await axios.post(`${baseurl}/${endpoint}`, payload);
       console.log(response.data);
@@ -106,70 +119,71 @@ export default function Navbar() {
   };
 
   // Handle OTP verification
-  
- 
   const handleSendOtp = async () => {
-  setLoading(true);
-  setError("");
+    setLoading(true);
+    setError("");
 
-  if (otp.length !== 6) {
-    setError("Please enter a 6-digit OTP.");
-    setLoading(false);
-    return;
-  }
+    if (otp.length !== 6) {
+      setError("Please enter a 6-digit OTP.");
+      setLoading(false);
+      return;
+    }
 
-  try {
-    const endpoint = loginType === "Employer" ? "employer/verify-otp" : "verify-otp";
-    const payload = loginType === "Employer" ? { contact_email: email, otp } : { email, otp };
-    const response = await axios.post(`${baseurl}/${endpoint}`, payload);
+    try {
+      const endpoint =
+        loginType === "Employer" ? "employer/verify-otp" : "verify-otp";
+      const payload =
+        loginType === "Employer"
+          ? { contact_email: email, otp }
+          : { email, otp };
+      const response = await axios.post(`${baseurl}/${endpoint}`, payload);
 
-    console.log('response', response);
-    if (response.data.success) {
-      if (loginType === "Employer") {
-        const sessionToken = response.data.session_token;
-        console.log(sessionToken);
-        if (sessionToken) {
-          localStorage.setItem("employerToken", sessionToken);
-          setOtpSent(false);
-          setShowModal(false);
-          window.location.href = "/employer/dashboard";
+      console.log("response", response);
+      if (response.data.success) {
+        if (loginType === "Employer") {
+          const sessionToken = response.data.session_token;
+          if (sessionToken) {
+            localStorage.setItem("employerToken", sessionToken);
+            setOtpSent(false);
+            setShowModal(false);
+            window.location.href = "/employer/dashboard";
+          } else {
+            setOtpSent(false);
+            setShowModal(false);
+            router.push("/employer/onboarding");
+          }
         } else {
+          const sessionToken = response.data.token;
+          console.log("Session Token:", response.data);
+          localStorage.setItem("port_tok", sessionToken);
+          setShowModal(false);
+          setOtpSent(false);
+          const redirectPath =
+            response.data.user.doneprofile === 1
+              ? "/candidate/dashboard"
+              : "/candidate/candidate-login";
+          router.push(redirectPath);
+        }
+      } else {
+        if (
+          loginType === "Employer" &&
+          response.data.message === "No employer found with this email"
+        ) {
           setOtpSent(false);
           setShowModal(false);
           router.push("/employer/onboarding");
+        } else {
+          setError("Invalid OTP. Please try again.");
         }
-      } else {
-        const sessionToken = response.data.token;
-        console.log("Session Token:", response.data);
-        localStorage.setItem("port_tok", sessionToken);
-        setShowModal(false);
-        setOtpSent(false);
-        // Redirect based on whether profile is complete (doneprofile: 1) or not
-        const redirectPath = response.data.user.doneprofile === 1 
-          ? "/candidate/dashboard" 
-          : "/candidate/candidate-login";
-        router.push(redirectPath);
       }
-    } else {
-      if (
-        loginType === "Employer" &&
-        response.data.message === "No employer found with this email"
-      ) {
-        setOtpSent(false);
-        setShowModal(false);
-        router.push("/employer/onboarding");
-      } else {
-        setError("Invalid OTP. Please try again.");
-      }
+    } catch (error) {
+      setOtpSent(false);
+      setShowModal(false);
+      router.push("/employer/onboarding");
+      setError("Failed to verify OTP. Please try again.");
     }
-  } catch (error) {
-    setOtpSent(false);
-    setShowModal(false);
-    router.push("/employer/onboarding");
-    setError("Failed to verify OTP. Please try again.");
-  }
-  setLoading(false);
-};
+    setLoading(false);
+  };
 
   // Handle Employer password login
   const handleEmployerLogin = async () => {
@@ -215,16 +229,21 @@ export default function Navbar() {
     }
 
     try {
-      const response = await axios.post(`${baseurl}/candidate/login`, { email, password });
+      const response = await axios.post(`${baseurl}/candidate/login`, {
+        email,
+        password,
+      });
       const responseData = await response.data;
-      console.log(responseData.token)
+      console.log(responseData.token);
       if (responseData.success) {
         localStorage.setItem("port_tok", responseData?.token);
         setShowModal(false);
         setLoginType("");
         router.push("/candidate/candidate-login");
       } else {
-        setError(responseData.message || "Invalid credentials. Please try again.");
+        setError(
+          responseData.message || "Invalid credentials. Please try again."
+        );
       }
     } catch (error) {
       console.error("Candidate login error:", error);
@@ -236,24 +255,20 @@ export default function Navbar() {
   // Handle logout
   const handleLogout = () => {
     localStorage.removeItem("employerToken");
-    // localStorage.removeItem("port_tok");
+    localStorage.removeItem("port_tok");
     setIsLoggedIn(false);
+    setUserType(null);
     router.push("/");
   };
 
-  //  console.log('res.data.success' ,usercred)
-
-
-     const handleCreditsClick = () => {
+  const handleCreditsClick = () => {
     setShowCredits(!showCredits);
     setTimeout(() => setShowCredits(false), 3000); // Auto-hide after 3 seconds
   };
 
-   const handleCloseTooltip = () => {
+  const handleCloseTooltip = () => {
     setShowCredits(false);
   };
-
-
 
   return (
     <>
@@ -261,9 +276,12 @@ export default function Navbar() {
       <nav className="bg-white p-4 shadow-md sticky top-0 z-50 px-[8%]">
         <div className="mx-auto flex justify-between items-center">
           <div className="text-black text-2xl font-bold">
-            <Link className={`flex items-center ${isLoggedIn ? '' : ' '} `} href="/">
-            <img  className="h-[80px]" src='/img/logo-rm-boat.png' />
-              <span className="text-2xl ml-2  uppercase leading-1">
+            <Link
+              className={`flex items-center ${isLoggedIn ? "" : " "} `}
+              href="/"
+            >
+              <img className="h-[80px]" src="/img/logo-rm-boat.png" />
+              <span className="text-2xl ml-2 uppercase leading-1">
                 Hiring Boat
               </span>
             </Link>
@@ -281,7 +299,10 @@ export default function Navbar() {
                 <Link href="/jobs" className="text-black hover:text-gray-600">
                   Jobs
                 </Link>
-                <Link href="/contact" className="text-black hover:text-gray-600">
+                <Link
+                  href="/contact"
+                  className="text-black hover:text-gray-600"
+                >
                   Contact
                 </Link>
                 <button
@@ -304,47 +325,55 @@ export default function Navbar() {
                 </button>
               </>
             ) : (
-               <div className="flex items-center gap-4">
-      {/* <Link href={loginType === "Employer" ? "/candidate/dashboard" : "/employer/dashboard"} className="text-black hover:text-gray-600 transition-colors duration-200">
-        Dashboards
-      </Link> */}
-      {loginType !== "Employer" && (
-         <div className="relative">
-        <button
-          onClick={handleCreditsClick}
-          className="flex items-center gap-2 text-blue-950 font-semibold  bg-slate-200 px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-        >
-         <FaCoins/>
-          <span>
-              Available Credits
+              <div className="flex items-center gap-4">
+                {userType === "Employer" && (
+                  <div className="relative">
+                    <button
+                      onClick={handleCreditsClick}
+                      className="flex items-center gap-2 text-blue-950 font-semibold bg-slate-200 px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                    >
+                      <FaCoins />
+                      <span>Available Credits</span>
+                    </button>
+                    {showCredits && (
+                      <div className="absolute right-0 mt-3 w-64 bg-gradient-to-br from-white to-gray-100 text-black rounded-xl shadow-xl p-6 border border-gray-200 animate-[fadeIn_0.3s_ease-in-out]">
+                        <div className="flex items-center gap-3 mb-3">
+                          <FaCoins className="text-3xl text-yellow-500 animate-pulse" />
+                          <h3 className="text-lg font-semibold text-gray-800">
+                            Your Credits
+                          </h3>
+                        </div>
+                        <p className="text-base font-medium text-gray-700">
+                          Remaining Credits:{" "}
+                          <span className="text-green-600 font-bold">
+                            {usercred}
+                          </span>
+                        </p>
+                        <p className="text-sm text-gray-500 mt-2">
+                          Use credits to unlock premium features!
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <Link
+                  href={
+                    userType === "Employer"
+                      ? "/employer/profile"
+                      : "/candidate/dashboard"
+                  }
+                  className="flex items-center"
+                >
+                  <FaUserCircle className="text-2xl text-[#00223f] hover:text-[#004080] transition-colors duration-200" />
+                </Link>
 
-          </span>
-        </button>
-        {showCredits && (
-          <div className="absolute right-0 mt-3 w-64 bg-gradient-to-br from-white to-gray-100 text-black rounded-xl shadow-xl p-6 border border-gray-200 animate-[fadeIn_0.3s_ease-in-out]">
-            <div className="flex items-center gap-3 mb-3">
-              <FaCoins className="text-3xl text-yellow-500 animate-pulse" />
-              <h3 className="text-lg font-semibold text-gray-800">Your Credits</h3>
-            </div>
-            <p className="text-base font-medium text-gray-700">
-              Remaining Credits: <span className="text-green-600 font-bold">{usercred}</span>
-            </p>
-            <p className="text-sm text-gray-500 mt-2">Use credits to unlock premium features!</p>
-          </div>
-        )}
-      </div>
-      )}
-      <Link href={loginType === "Employer" ? "/candidate/dashboard" : "/employer/profile"} className="flex items-center">
-        <FaUserCircle className="text-2xl text-[#00223f] hover:text-[#004080] transition-colors duration-200" />
-      </Link>
-     
-      <button
-        onClick={handleLogout}
-        className="text-white bg-red-500 px-4 py-2 rounded-lg hover:bg-red-600 transition-all duration-200 shadow-sm hover:shadow-md"
-      >
-        Logout
-      </button>
-    </div>
+                <button
+                  onClick={handleLogout}
+                  className="text-white bg-red-500 px-4 py-2 rounded-lg hover:bg-red-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                >
+                  Logout
+                </button>
+              </div>
             )}
           </div>
 
@@ -414,9 +443,24 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <Link href={loginType === "Employer" ? "/employer/dashboard" : "/candidate/dashboard"} className="text-black hover:text-gray-600">
+                <Link
+                  href={
+                    userType === "Employer"
+                      ? "/employer/dashboard"
+                      : "/candidate/dashboard"
+                  }
+                  className="text-black hover:text-gray-600"
+                >
                   Dashboard
                 </Link>
+                {userType === "Employer" && (
+                  <button
+                    onClick={handleCreditsClick}
+                    className="text-black font-semibold border-2 border-[#02325a] px-4 py-2 rounded-lg"
+                  >
+                    Available Credits: {usercred}
+                  </button>
+                )}
                 <button
                   onClick={handleLogout}
                   className="text-white bg-red-500 px-4 py-2 rounded-lg"
@@ -465,8 +509,6 @@ export default function Navbar() {
                 />
               </div>
 
-            
-
               {!otpSent && !useOtpLogin && (
                 <div className="relative">
                   <RiLockPasswordFill className="absolute top-3 left-3 text-gray-400" />
@@ -480,7 +522,7 @@ export default function Navbar() {
                 </div>
               )}
 
-                {!otpSent && (
+              {!otpSent && (
                 <div className="flex items-center">
                   <input
                     type="checkbox"

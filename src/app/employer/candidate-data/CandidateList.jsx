@@ -47,6 +47,7 @@ const getRandomColor = (seed) => {
   return colors[index];
 };
 
+
 const CandidateCard = ({ candidate }) => {
   const [showPhone, setShowPhone] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState(candidate.number || 'xxxxxxx');
@@ -94,7 +95,7 @@ const CandidateCard = ({ candidate }) => {
 
   const skills = candidate.skills
     ? Array.isArray(candidate.skills)
-      ? candidate.skills
+      ? candidate.skills.slice(0, 4) // Limit to 4 skills
       : []
     : [];
 
@@ -106,6 +107,31 @@ const CandidateCard = ({ candidate }) => {
     }
   })();
 
+  const preferredJobTitles = (() => {
+    try {
+      return JSON.parse(candidate.preferred_job_titles || "[]");
+    } catch {
+      return [];
+    }
+  })();
+
+  const preferredLocations = (() => {
+    try {
+      return JSON.parse(candidate.preferred_locations || "[]");
+    } catch {
+      return [];
+    }
+  })();
+
+   const candidateSkils = (() => {
+    try {
+      return JSON.parse(candidate.skills || "[]");
+    } catch {
+      return [];
+    }
+  })();
+
+  const isFresher = candidate.experience_level === 'Fresher';
   const experience = `${candidate.experience_years || 0} yrs ${candidate.experience_months || 0} mos`;
 
   const colorClass = getRandomColor(candidate.id || candidate.full_name);
@@ -113,19 +139,28 @@ const CandidateCard = ({ candidate }) => {
     <div className="bg-white rounded-lg shadow p-5 border border-gray-200 flex flex-col gap-3 mb-6 max-w-3xl">
       <div className="flex items-center gap-2">
         <div className={`bg-[#02325a] px-4 py-2 rounded-full text-2xl font-semibold text-white`} >
-          { candidate.full_name.charAt(0)}
+          {candidate.full_name.charAt(0)}
         </div>
         <div>
           <h3 className="text-lg font-semibold text-gray-800">{candidate.full_name}</h3>
           <div className='flex mt-1 gap-2'>
-            <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
-              <FaBriefcase className="text-base text-[#02325a]" />
-              {experience}
-            </div>
-            <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
-              <FaCoins className="text-base text-[#02325a]" />
-              {formatIndianSalary(candidate.current_salary)}
-            </div>
+            {!isFresher && (
+              <>
+                <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
+                  <FaBriefcase className="text-base text-[#02325a]" />
+                  {experience}
+                </div>
+                <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
+                  <FaCoins className="text-base text-[#02325a]" />
+                  {formatIndianSalary(candidate.current_salary)}
+                </div>
+              </>
+            )}
+            {isFresher && (
+              <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
+                <span className="bg-green-100 text-green-800 rounded-full px-3 py-1">Fresher</span>
+              </div>
+            )}
             <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
               <FaMapMarkerAlt className="text-base text-[#02325a]" />
               {candidate.city}, {candidate.state}
@@ -134,20 +169,30 @@ const CandidateCard = ({ candidate }) => {
         </div>
       </div>
       <div className="flex items-center justify-items-start flex-col my-4 gap-2">
+        {!isFresher && (
+          <div className='flex w-full gap-5 my-1'>
+            <span className='text-xl flex items-center gap-2 text-gray-500'>
+              <FaBriefcase className='text-[20px]' />Current / Latest
+            </span>
+            <span className="flex text-xl items-center text-[#02325a] gap-1">
+              {candidate.job_title}, {candidate.company_name}
+            </span>
+          </div>
+        )}
         <div className='flex w-full gap-5 my-1'>
-          <span className='text-xl flex items-center gap-2 text-gray-500'>
-            <FaBriefcase className='text-[20px]' />Current / Latest
-          </span>
-          <span className="flex text-xl items-center text-[#02325a] gap-1">
-            {candidate.job_title}, {candidate.company_name}
-          </span>
-        </div>
-        <div className='flex w-full gap-5 iniciativa-1'>
           <span className='text-xl flex items-center gap-2 text-gray-500'>
             <FaMapMarkerAlt className='text-[20px]' />Pref. Location
           </span>
           <span className="flex text-xl items-center text-[#02325a] gap-1">
-            {candidate.city}, {candidate.state}
+            {preferredLocations.length > 0 ? preferredLocations.join(', ') : `${candidate.city}, ${candidate.state}`}
+          </span>
+        </div>
+        <div className='flex w-full gap-5 my-1'>
+          <span className='text-xl flex items-center gap-2 text-gray-500'>
+            <FaBriefcase className='text-[20px]' />Pref. Job Titles
+          </span>
+          <span className="flex text-xl items-center text-[#02325a] gap-1">
+            {preferredJobTitles.length > 0 ? preferredJobTitles.join(', ') : 'Not specified'}
           </span>
         </div>
         <div className='flex w-full gap-5 my-1'>
@@ -155,8 +200,8 @@ const CandidateCard = ({ candidate }) => {
             <BiMedal className='text-[20px]' />Skills
           </span>
           <span className="flex text-xl items-center text-[#02325a] gap-1">
-            {skills && skills.length > 0 ? (
-              skills.map((skill, idx) => (
+            {candidateSkils && candidateSkils.length > 0 ? (
+              candidateSkils.map((skill, idx) => (
                 <span key={idx} className="bg-blue-50 text-[#02325a] rounded-full px-3 py-1">
                   {skill}
                 </span>
@@ -196,6 +241,8 @@ const CandidateCard = ({ candidate }) => {
     </div>
   );
 };
+
+
 
 const SkeletonLoader = () => (
   <div className="animate-pulse space-y-4 p-5 sm:p-6 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
