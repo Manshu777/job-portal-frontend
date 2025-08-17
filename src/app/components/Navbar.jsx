@@ -56,7 +56,7 @@ export default function Navbar() {
             },
           });
           setUserType("Employer");
-          setusercred(res?.data?.data?.credits || null);
+          setusercred(res?.data?.data || null);
         } else if (candidateToken) {
           res = await axios.get(`${baseurl}/candidateprofile`, {
             headers: {
@@ -296,7 +296,7 @@ export default function Navbar() {
                 <Link href="/about" className="text-black hover:text-gray-600">
                   About
                 </Link>
-                <Link href="/jobs" className="text-black hover:text-gray-600">
+                <Link href="/job" className="text-black hover:text-gray-600">
                   Jobs
                 </Link>
                 <Link
@@ -336,22 +336,40 @@ export default function Navbar() {
                       <span>Available Credits</span>
                     </button>
                     {showCredits && (
-                      <div className="absolute right-0 mt-3 w-64 bg-gradient-to-br from-white to-gray-100 text-black rounded-xl shadow-xl p-6 border border-gray-200 animate-[fadeIn_0.3s_ease-in-out]">
-                        <div className="flex items-center gap-3 mb-3">
-                          <FaCoins className="text-3xl text-yellow-500 animate-pulse" />
-                          <h3 className="text-lg font-semibold text-gray-800">
+                      <div className="absolute right-0 mt-3 w-72 bg-gradient-to-br from-white via-gray-50 to-gray-100 text-black rounded-2xl shadow-2xl p-6 border border-gray-200 animate-[fadeIn_0.3s_ease-in-out]">
+                        {/* Header */}
+                        <div className="flex items-center gap-3 mb-4">
+                          <FaCoins className="text-4xl text-yellow-500 " />
+                          <h3 className="text-xl font-bold text-gray-800">
                             Your Credits
                           </h3>
                         </div>
-                        <p className="text-base font-medium text-gray-700">
-                          Remaining Credits:{" "}
-                          <span className="text-green-600 font-bold">
-                            {usercred}
-                          </span>
-                        </p>
-                        <p className="text-sm text-gray-500 mt-2">
-                          Use credits to unlock premium features!
-                        </p>
+
+                        {/* Credits section */}
+                        <div className="grid grid-cols-2 gap-4">
+                          {/* Job Post Credits */}
+                          <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex flex-col items-center shadow-sm hover:shadow-md transition">
+                            <span className="text-2xl font-bold text-green-600">
+                              {usercred?.job_post_credits ?? 0}
+                            </span>
+                            <span className="text-sm font-medium text-gray-600">
+                              Job Posts
+                            </span>
+                          </div>
+
+                          {/* Database Credits */}
+                          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col items-center shadow-sm hover:shadow-md transition">
+                            <span className="text-2xl font-bold text-blue-600">
+                              {usercred?.database_credits ?? 0}
+                            </span>
+                            <span className="text-sm font-medium text-gray-600">
+                              Database
+                            </span>
+                          </div>
+                        </div>
+
+     
+                       
                       </div>
                     )}
                   </div>
@@ -414,7 +432,7 @@ export default function Navbar() {
             <Link href="/about" className="text-black hover:text-gray-600">
               About
             </Link>
-            <Link href="/jobs" className="text-black hover:text-gray-600">
+            <Link href="/job" className="text-black hover:text-gray-600">
               Jobs
             </Link>
             <Link href="/contact" className="text-black hover:text-gray-600">

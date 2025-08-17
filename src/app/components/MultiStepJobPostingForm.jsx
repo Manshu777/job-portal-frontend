@@ -33,7 +33,8 @@ import Bold from "@tiptap/extension-bold";
 import Italic from "@tiptap/extension-italic";
 import BulletList from "@tiptap/extension-bullet-list";
 import OrderedList from "@tiptap/extension-ordered-list";
-
+import Swal from "sweetalert2";
+import { useRouter } from "next/navigation";
 // import TextAlign from '@tiptap/extension-text-align';
 // import Superscript from '@tiptap/extension-superscript';
 // import Subscript from '@tiptap/extension-subscript';
@@ -41,6 +42,8 @@ import OrderedList from "@tiptap/extension-ordered-list";
 // import Color from '@tiptap/extension-color';
 
 const MultiStepJobPostingForm = ({ userdata, companies }) => {
+
+  const router = useRouter()
  const skillsOptions = [
     { value: "HTML", label: "HTML" },
     { value: "CSS", label: "CSS" },
@@ -1206,8 +1209,15 @@ const fetchSpecializations = useCallback(async (courseName) => {
           "Content-Type": "multipart/form-data",
         },
       });
-      alert("Job posting submitted successfully!");
-      // Reset form
+
+        Swal.fire({
+          title: "Job posting submitted successfully!",
+          text: "You clicked the button!",
+          icon: "success",
+        });
+
+
+      
       setFormData({
         companyName: "",
         newCompanyName: "",
@@ -1253,7 +1263,10 @@ const fetchSpecializations = useCallback(async (courseName) => {
       setCurrentStep(1);
       setShowConfirmation(false);
       setShowNewCompanyFields(false);
+      
       localStorage.removeItem("jobPostingFormData");
+
+       router.push('/employer/post-job')
       setApiError(null);
     } catch (error) {
       if (error.response?.status === 422) {

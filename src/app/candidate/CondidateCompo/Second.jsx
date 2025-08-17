@@ -46,7 +46,7 @@ const Second = ({ alldata = {}, handelinputs, errors }) => {
       setError(null);
       try {
         const apiUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://147.93.18.63:8000";
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
         const response = await fetch(
           `${apiUrl}/api/v1/qualifications/education-level/${eduLvl}`
         );
@@ -84,7 +84,7 @@ const Second = ({ alldata = {}, handelinputs, errors }) => {
           return;
         }
         const apiUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://147.93.18.63:8000";
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
         const response = await fetch(
           `${apiUrl}/api/v1/qualifications/${selectedQualification.id}/specializations`
         );

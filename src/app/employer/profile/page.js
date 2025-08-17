@@ -30,7 +30,7 @@ const EditEmployerProfile = () => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('employerToken');
       if (!token) {
-        router.push('/login');
+        router.push('/');
         return;
       }
 
