@@ -4,7 +4,7 @@ import { FiBriefcase, FiCalendar, FiDollarSign, FiClock, FiMapPin } from "react-
 import { FiAward } from "react-icons/fi";
 import axios from "axios";
 
-const Three = ({ alldata, handelinputs }) => {
+const Three = ({ alldata, handelinputs,errors }) => {
   const [jobRoleSearch, setJobRoleSearch] = useState("");
   const [showJobRoleDropdown, setShowJobRoleDropdown] = useState(false);
   const [filteredJobRoleOptions, setFilteredJobRoleOptions] = useState([]);
@@ -221,6 +221,7 @@ const fetchLocations = useCallback(
             name="experience_level"
             value={alldata.experience_level || ""}
             onChange={handelinputs}
+          
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
           >
             <option value="">Select experience level</option>
@@ -231,6 +232,10 @@ const fetchLocations = useCallback(
             ))}
           </select>
         </div>
+
+          {errors.experience_level && (
+          <p className="text-red-500 text-sm">{errors.experience_level}</p>
+        )}
 
         {alldata.experience_level !== "Fresher" && (
           <>

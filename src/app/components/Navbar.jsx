@@ -71,8 +71,8 @@ export default function Navbar() {
         } else {
           setIsLoggedIn(false);
           setUserType(null);
-          localStorage.removeItem("employerToken");
-          localStorage.removeItem("port_tok");
+          // localStorage.removeItem("employerToken");
+          // localStorage.removeItem("port_tok");
           if (pathname !== "/") {
             // router.push("/"); // Uncomment if navigation is needed
           }
@@ -81,8 +81,8 @@ export default function Navbar() {
         console.error("Not logged in or invalid token", err);
         setIsLoggedIn(false);
         setUserType(null);
-        localStorage.removeItem("employerToken");
-        localStorage.removeItem("port_tok");
+        // localStorage.removeItem("employerToken");
+        // localStorage.removeItem("port_tok");
         if (pathname !== "/") {
           // router.push("/"); // Uncomment if navigation is needed
         }

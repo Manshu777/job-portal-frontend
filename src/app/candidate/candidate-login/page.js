@@ -100,11 +100,28 @@ export default function Page() {
         isValid = false;
       }
     } else if (step === 3) {
+       console.log('highest_education',alldata?.highest_education)
       if (!alldata?.highest_education) {
         newErrors.highest_education = "Highest education is required";
         isValid = false;
       }
+       if(!alldata?.school_medium){
+        newErrors.highest_education = "Highest education is required";
+        isValid = false;
+       }
+       else if (alldata?.highest_education == 'Graduate'){
+
+
+      }
+
+     
+
     } else if (step === 4) {
+      if(!alldata.experience_level){
+          newErrors.experience_level = "Experience Level is required";
+        isValid = false;
+      }
+      
     } else if (step === 5) {
     } else if (step === 6) {
       if (alldata?.skills?.length === 0) {
@@ -215,12 +232,14 @@ export default function Page() {
           },
         }
       );
+
       if (response.data.success) {
         Swal.fire({
           title: "Submit Success",
           text: "You clicked the button!",
           icon: "success",
         });
+
         router.push("/candidate/dashboard");
       } else {
         Swal.fire({
@@ -258,10 +277,10 @@ export default function Page() {
   };
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    // if (typeof window !== "undefined") {
       const token = localStorage?.getItem("port_tok");
       getcondidate(token);
-    }
+    // }
   }, [router]);
 
   const addskilles = (skill) => {

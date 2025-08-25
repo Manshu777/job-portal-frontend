@@ -181,7 +181,7 @@ const Second = ({ alldata = {}, handelinputs, errors }) => {
     return <div className="text-center p-8">Loading...</div>;
   }
 
-  console.log("errors", errors);
+
 
   const customStyles = {
     control: (provided) => ({
@@ -298,6 +298,10 @@ const Second = ({ alldata = {}, handelinputs, errors }) => {
   menuPortalTarget={document.body} 
           />
         </div>
+
+         {errors.highest_education && (
+          <p className="text-red-500 text-sm">{errors.highest_education}</p>
+        )}
 
         {alldata.highest_education && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
