@@ -53,8 +53,12 @@ const EmployerDashboard = () => {
           },
         });
 
+
+        console.log('is_verified',res.data.data.is_blocked)
+
         if (res.data && res.data.success) {
           setIsLoggedIn(res.data.data);
+
           setIsVisible(res.data.data.is_blocked);
         }
       } catch (err) {
@@ -124,10 +128,10 @@ const EmployerDashboard = () => {
     event.preventDefault();
 
     const formData = new FormData();
-    if (selectedFiles.other_certificate) {
-      formData.append("id", SelectedCompany.id);
+
+      formData.append("id", companies[0].id);
       formData.append("other_certificate", selectedFiles.other_certificate);
-    }
+    
 
     try {
       const response = await axios.post(`${baseurl}/update-docs`, formData, {
@@ -218,10 +222,11 @@ const EmployerDashboard = () => {
 
                     <form onSubmit={handleSubmitdocs}>
                       <div className="mb-6">
-                        <label className="block text-gray-700 font-semibold mb-1">
-                          Select Company
-                        </label>
-                        <select
+                        
+                       { console.log('companies',companies[0].id)}
+                       <input type="hidden" value={companies[0].id}>
+                       </input>
+                        {/* <select
                           className="mt-2 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           onChange={handleSelectChange}
                           value={SelectedCompany ? SelectedCompany.id : ""}
@@ -234,7 +239,7 @@ const EmployerDashboard = () => {
                               {company.name}
                             </option>
                           ))}
-                        </select>
+                        </select> */}
                       </div>
                       <div className="mb-6">
                         <label className="block text-gray-700 font-semibold mb-1">
