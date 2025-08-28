@@ -48,10 +48,11 @@ const getRandomColor = (seed) => {
 };
 
 
-const CandidateCard = ({ candidate }) => {
+const CandidateCard = ({ candidate,onViewProfile }) => {
   const [showPhone, setShowPhone] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState(candidate.number || 'xxxxxxx');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   function formatIndianSalary(amount) {
     const num = Number(amount);
@@ -65,6 +66,11 @@ const CandidateCard = ({ candidate }) => {
     }
     return num.toString();
   }
+
+    const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
 
   const revealNumber = async (candidateId) => {
     setIsLoading(true);
@@ -136,6 +142,7 @@ const CandidateCard = ({ candidate }) => {
 
   const colorClass = getRandomColor(candidate.id || candidate.full_name);
   return (
+        <>
     <div className="bg-white rounded-lg shadow p-5 border border-gray-200 flex flex-col gap-3 mb-6 max-w-3xl">
       <div className="flex items-center gap-2">
         <div className={`bg-[#02325a] px-4 py-2 rounded-full text-2xl font-semibold text-white`} >
@@ -237,8 +244,130 @@ const CandidateCard = ({ candidate }) => {
             {isLoading ? 'Revealing...' : showPhone ? phoneNumber : 'View Phone Number'}
           </button>
         )}
+
+         <button
+            className="bg-green-600 text-white py-2 px-4 rounded-lg font-medium flex items-center gap-2 hover:bg-green-700 transition"
+            onClick={toggleSidebar}
+          >
+            <FaUser /> View Profile
+          </button>
       </div>
     </div>
+
+
+       <div
+        className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 ${
+          isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+           >
+        <div className="flex justify-between items-center p-4 border-b">
+          <h2 className="text-xl font-semibold text-gray-800">Candidate Profile</h2>
+          <button
+            className="text-gray-600 hover:text-gray-800"
+            onClick={toggleSidebar}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="p-6 overflow-y-auto h-full">
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-lg font-medium text-gray-700">Personal Information</h3>
+              <p className="text-sm text-gray-600"><strong>Full Name:</strong> {candidate.full_name}</p>
+              <p className="text-sm text-gray-600"><strong>Email:</strong> {candidate.email}</p>
+              <p className="text-sm text-gray-600"><strong>Phone:</strong> {candidate.number_revealed ? candidate.number : phoneNumber}</p>
+              <p className="text-sm text-gray-600"><strong>Gender:</strong> {candidate.gender}</p>
+              <p className="text-sm text-gray-600"><strong>Date of Birth:</strong> {new Date(candidate.dob).toLocaleDateString()}</p>
+              <p className="text-sm text-gray-600"><strong>Address:</strong> {candidate.address}</p>
+              <p className="text-sm text-gray-600"><strong>City:</strong> {candidate.city}</p>
+              <p className="text-sm text-gray-600"><strong>State:</strong> {candidate.state}</p>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium text-gray-700">Professional Details</h3>
+              <p className="text-sm text-gray-600"><strong>Job Title:</strong> {candidate.job_title || 'N/A'}</p>
+              <p className="text-sm text-gray-600"><strong>Company:</strong> {candidate.company_name || 'N/A'}</p>
+              <p className="text-sm text-gray-600"><strong>Experience:</strong> {formatExperience()}</p>
+              <p className="text-sm text-gray-600"><strong>Current Salary:</strong> {formatIndianSalary(candidate.current_salary)}</p>
+              <p className="text-sm text-gray-600"><strong>Employment Type:</strong> {candidate.employment_type || 'N/A'}</p>
+              <p className="text-sm text-gray-600"><strong>Experience Level:</strong> {candidate.experience_level || 'N/A'}</p>
+              <p className="text-sm text-gray-600"><strong>Job Roles:</strong> {jobRoles.length > 0 ? jobRoles.join(', ') : 'None'}</p>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium text-gray-700">Education</h3>
+              <p className="text-sm text-gray-600"><strong>Degree:</strong> {candidate.degree || 'N/A'}</p>
+              <p className="text-sm text-gray-600"><strong>Specialization:</strong> {candidate.specialization || 'N/A'}</p>
+              <p className="text-sm text-gray-600"><strong>College:</strong> {candidate.college_name || 'N/A'}</p>
+              <p className="text-sm text-gray-600"><strong>Passing Marks:</strong> {candidate.passing_marks || 'N/A'}</p>
+              <p className="text-sm text-gray-600"><strong>Education Level:</strong> {candidate.education_level || 'N/A'}</p>
+              <p className="text-sm text-gray-600"><strong>Currently Pursuing:</strong> {candidate.currently_pursuing || 'N/A'}</p>
+              <p className="text-sm text-gray-600"><strong>Highest Education:</strong> {candidate.highest_education || 'N/A'}</p>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium text-gray-700">Preferences</h3>
+              <p className="text-sm text-gray-600"><strong>Preferred Job Titles:</strong> {preferredJobTitles.length > 0 ? preferredJobTitles.join(', ') : 'Not specified'}</p>
+              <p className="text-sm text-gray-600"><strong>Preferred Locations:</strong> {preferredLocations.length > 0 ? preferredLocations.join(', ') : 'Not specified'}</p>
+              <p className="text-sm text-gray-600"><strong>Preferred Languages:</strong> {candidate.preferred_language || 'Not specified'}</p>
+              <p className="text-sm text-gray-600"><strong>Prefers Night Shift:</strong> {candidate.prefers_night_shift ? 'Yes' : 'No'}</p>
+              <p className="text-sm text-gray-600"><strong>Prefers Day Shift:</strong> {candidate.prefers_day_shift ? 'Yes' : 'No'}</p>
+              <p className="text-sm text-gray-600"><strong>Work from Home:</strong> {candidate.work_from_home ? 'Yes' : 'No'}</p>
+              <p className="text-sm text-gray-600"><strong>Work from Office:</strong> {candidate.work_from_office ? 'Yes' : 'No'}</p>
+              <p className="text-sm text-gray-600"><strong>Field Job:</strong> {candidate.field_job ? 'Yes' : 'No'}</p>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium text-gray-700">Skills</h3>
+              <div className="flex flex-wrap gap-2">
+                {/* {candidateSkills.length > 0 ? (
+                  candidateSkills.map((skill, idx) => (
+                    <span key={idx} className="bg-blue-50 text-[#02325a] rounded-full px-3 py-1 text-sm">
+                      {skill}
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-600">No skills listed</p>
+                )} */}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium text-gray-700">Activity</h3>
+              <p className="text-sm text-gray-600"><strong>Active User:</strong> {candidate.active_user ? 'Yes' : 'No'}</p>
+              <p className="text-sm text-gray-600"><strong>Last Login:</strong> {candidate.last_login ? new Date(candidate.last_login).toLocaleString() : 'N/A'}</p>
+              <p className="text-sm text-gray-600"><strong>Total Jobs Applied:</strong> {candidate.total_jobs_applied || 0}</p>
+              <p className="text-sm text-gray-600"><strong>Total Job Views:</strong> {candidate.total_job_views || 0}</p>
+              <p className="text-sm text-gray-600"><strong>Profile Visited:</strong> {candidate.profile_visited ? 'Yes' : 'No'}</p>
+              <p className="text-sm text-gray-600"><strong>Created At:</strong> {candidate.created_at ? new Date(candidate.created_at).toLocaleString() : 'N/A'}</p>
+              <p className="text-sm text-gray-600"><strong>Updated At:</strong> {candidate.updated_at ? new Date(candidate.updated_at).toLocaleString() : 'N/A'}</p>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium text-gray-700">Additional Information</h3>
+              <p className="text-sm text-gray-600"><strong>English Level:</strong> {candidate.english_level || 'Not specified'}</p>
+              <p className="text-sm text-gray-600"><strong>Notice Period:</strong> {candidate.notice_period || 'Not specified'}</p>
+              <p className="text-sm text-gray-600"><strong>Experience Type:</strong> {candidate.experience_type || 'Not specified'}</p>
+              <p className="text-sm text-gray-600"><strong>Start Date:</strong> {candidate.start_date ? new Date(candidate.start_date).toLocaleDateString() : 'N/A'}</p>
+              <p className="text-sm text-gray-600"><strong>End Date:</strong> {candidate.end_date ? new Date(candidate.end_date).toLocaleDateString() : 'N/A'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Overlay for sidebar */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black opacity-50 z-40"
+          onClick={toggleSidebar}
+        ></div>
+      )}
+
+
+    
+    </>
   );
 };
 
