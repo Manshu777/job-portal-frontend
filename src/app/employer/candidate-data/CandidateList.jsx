@@ -146,7 +146,7 @@ const CandidateCard = ({ candidate,onViewProfile }) => {
     <div className="bg-white rounded-lg shadow p-5 border border-gray-200 flex flex-col gap-3 mb-6 max-w-3xl">
       <div className="flex items-center gap-2">
         <div className={`bg-[#02325a] px-4 py-2 rounded-full text-2xl font-semibold text-white`} >
-          {candidate.full_name.charAt(0)}
+          {candidate?.full_name?.charAt(0) || 'N'}
         </div>
         <div>
           <h3 className="text-lg font-semibold text-gray-800">{candidate.full_name}</h3>
@@ -227,7 +227,7 @@ const CandidateCard = ({ candidate,onViewProfile }) => {
           </span>
         </div>
       </div>
-      <div className="mt-1">
+      <div className="mt-1  flex justify-between">
         {candidate.number_revealed ? (
           <div className="flex items-center bg-blue-100 text-blue-900 px-4 py-2 rounded-lg font-bold gap-2 w-fit">
             <FaPhone /> {candidate.number}
