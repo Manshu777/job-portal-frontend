@@ -88,53 +88,53 @@ const MyJobs = () => {
     setIsJobModalOpen(false);
   };
 
-  console.log("isLoggedIn.is_verified", isLoggedIn);
+  // console.log("isLoggedIn.is_verified", isLoggedIn);
 
   // Check if employer is not verified
-  if (
-    isLoggedIn.is_verified === 0 ||
-    isLoggedIn.is_verified === null ||
-    isLoggedIn.is_blocked === 1
-  ) {
-    return (
-      <div className="flex h-screen bg-gradient-to-br from-gray-100 to-gray-200">
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="bg-white max-w-lg w-full p-8 rounded-2xl shadow-xl transform transition-all animate-fadeIn">
-            <div className="flex items-center justify-center mb-6">
-              <h2 className="text-3xl font-bold text-gray-800 flex items-center">
-                Profile in Review Mode
-                <span className="ml-3 inline-block w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-              </h2>
-            </div>
-            <p className="text-gray-600 text-center mb-6 leading-relaxed">
-              Your employer account is currently under review by our admin team.
-              Once verified, you'll be able to post jobs and allow candidates to
-              log in and apply. Please wait for admin approval or contact
-              support for assistance.
-            </p>
-            <div className="flex justify-center gap-4">
-              <a
-                href="/employer/verify-status" // Replace with your verification status page URL
-                className="px-6 py-3 bg-[#02325a] text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-300"
-              >
-                Check Verification Status
-              </a>
-              <a
-                href="/contact" // Replace with your support page URL
-                className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-300"
-              >
-                Contact Support
-              </a>
-            </div>
-            <p className="text-sm text-gray-500 text-center mt-6">
-              We typically review accounts within 24-48 hours. Thank you for
-              your patience!
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // if (
+  //   isLoggedIn.is_verified === 0 ||
+  //   isLoggedIn.is_verified === null ||
+  //   isLoggedIn.is_blocked === 1
+  // ) {
+  //   return (
+  //     <div className="flex h-screen bg-gradient-to-br from-gray-100 to-gray-200">
+  //       <div className="flex-1 flex items-center justify-center p-4">
+  //         <div className="bg-white max-w-lg w-full p-8 rounded-2xl shadow-xl transform transition-all animate-fadeIn">
+  //           <div className="flex items-center justify-center mb-6">
+  //             <h2 className="text-3xl font-bold text-gray-800 flex items-center">
+  //               Profile in Review Mode
+  //               <span className="ml-3 inline-block w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+  //             </h2>
+  //           </div>
+  //           <p className="text-gray-600 text-center mb-6 leading-relaxed">
+  //             Your employer account is currently under review by our admin team.
+  //             Once verified, you'll be able to post jobs and allow candidates to
+  //             log in and apply. Please wait for admin approval or contact
+  //             support for assistance.
+  //           </p>
+  //           <div className="flex justify-center gap-4">
+  //             <a
+  //               href="/employer/verify-status" // Replace with your verification status page URL
+  //               className="px-6 py-3 bg-[#02325a] text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-300"
+  //             >
+  //               Check Verification Status
+  //             </a>
+  //             <a
+  //               href="/contact" // Replace with your support page URL
+  //               className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-300"
+  //             >
+  //               Contact Support
+  //             </a>
+  //           </div>
+  //           <p className="text-sm text-gray-500 text-center mt-6">
+  //             We typically review accounts within 24-48 hours. Thank you for
+  //             your patience!
+  //           </p>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   // Render the full dashboard if verified
   return (

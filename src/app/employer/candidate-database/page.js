@@ -10,6 +10,7 @@ import {
   MapPinIcon,
   AcademicCapIcon,
 } from '@heroicons/react/24/outline';
+import { baseurl } from '@/app/components/common';
 
 const CandidatesDashboard = () => {
   const router = useRouter();
@@ -230,6 +231,22 @@ const CandidatesDashboard = () => {
 
   const parseINR = (value) => {
     return value.replace(/,/g, '');
+  };
+
+  const fetchSuggestions = async (inputValue, type) => {
+    if (!inputValue) return [];
+    try {
+      const response = await axios.get(`${baseurl}/suggestions`, {
+        params: { query: inputValue, type },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`, // Adjust based on your auth setup
+        },
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error(`Error fetching ${type} suggestions:`, error);
+      return [];
+    }
   };
 
   return (

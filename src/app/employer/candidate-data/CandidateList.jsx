@@ -558,8 +558,8 @@ const CandidateList = () => {
     <div className="flex min-h-screen bg-gray-100">
       <Sidebar />
       <div className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 overflow-auto">
-        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 max-w-7xl mx-auto w-full">
-          <div className="w-full lg:w-1/3 sticky top-4">
+        <div className="flex flex-col justify-end lg:flex-row gap-6 lg:gap-8 max-w-7xl mx-auto w-full">
+          <div className="sticky top-4">
             <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl p-6 sm:p-8 border border-gray-100">
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 flex items-center">
                 <FaUser className="mr-2 text-[#02325a]" /> Filter Candidates
@@ -791,9 +791,9 @@ const CandidateList = () => {
                   </select>
                 </div> */}
                 <div>
-                  <label className="text-sm font-medium text-gray-700 flex items-center">
+                  {/* <label className="text-sm font-medium text-gray-700 flex items-center">
                     <FaBriefcase className="mr-2 text-[#02325a]" /> Employment Type
-                  </label>
+                  </label> */}
                   <div className="space-y-2">
                   {/* {  console.log('employment_types',filterOptions?.employment_types)} */}
                     {filterOptions?.employment_types?.map((option) => (
@@ -835,7 +835,7 @@ const CandidateList = () => {
               </form>
             </div>
           </div>
-          <div className="w-full lg:w-2/3">
+          <div className="w-full lg:w-[60%]">
             <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-800">

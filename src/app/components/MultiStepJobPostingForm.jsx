@@ -41,7 +41,20 @@ import { useRouter } from "next/navigation";
 // import TextStyle from '@tiptap/extension-text-style';
 // import Color from '@tiptap/extension-color';
 
+import Editor from '../../app/components/Editor';
+
+
+import Quill from "quill";
+import {Delta} from "quill";
+
+
+
 const MultiStepJobPostingForm = ({ userdata, companies }) => {
+ const [range, setRange] = useState(null);
+  const [lastChange, setLastChange] = useState(null);
+  const [readOnly, setReadOnly] = useState(false);
+  const quillRef = useRef(null);
+
 
   const router = useRouter()
  const skillsOptions = [
@@ -369,17 +382,21 @@ const MultiStepJobPostingForm = ({ userdata, companies }) => {
         }
       );
 
-      console.log("response", response);
+
 
       const generatedText =
         response.data?.jobOverview?.trim() || "Failed to generate description.";
       console.log("respgeneratedTextonse", generatedText);
       // Update form state and localStorage
 
-      setFormData((prev) => ({
-        ...prev,
-        jobOverview: generatedText,
-      }));
+      setFormData((prev) => ({ ...prev, jobOverview: generatedText }));
+
+      // ✅ Also update Quill editor directly
+      if (quillRef.current) {
+quillRef.current.clipboard.dangerouslyPasteHTML(generatedText);
+      
+      }
+
 
       localStorage.setItem(
         "jobPostingFormData",
@@ -1077,6 +1094,8 @@ const fetchSpecializations = useCallback(async (courseName) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("employerToken");
+
+
     if (!token) {
       setApiError("Please log in to submit a job posting.");
       return;
@@ -1087,6 +1106,19 @@ const fetchSpecializations = useCallback(async (courseName) => {
       return;
     }
     setIsSubmitting(true);
+
+  
+    // ✅ Get full HTML from Quill
+    const htmlContent = quillRef.current.root.innerHTML;
+
+    // Save into formData
+    setFormData((prev) => ({
+      ...prev,
+      jobOverview: htmlContent,
+    }));
+
+    console.log("Submitted HTML:", htmlContent);
+  
 
     const apiData = new FormData();
     apiData.append("employer_id", isLoggedIn.id);
@@ -2557,141 +2589,21 @@ const renderStepContent = () => {
               </motion.button>
             </div>
 
-            <div
-              className={`mt-2 border rounded-lg ${
-                errors.jobOverview ? "border-red-500" : "border-gray-300"
-              }`}
-            >
-              <div className="tiptap-toolbar flex flex-wrap mb-3">
-                <button
-                  type="button"
-                  onClick={() =>
-                    editor.chain().focus().toggleHeading({ level: 1 }).run()
-                  }
-                  className={`${baseBtn} ${
-                    editor.isActive("heading", { level: 1 })
-                      ? activeBtn
-                      : inactiveBtn
-                  }`}
-                  aria-label="H1"
-                  title="Heading 1"
-                >
-                  <FaHeading className="mr-1" /> H1
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    editor.chain().focus().toggleHeading({ level: 2 }).run()
-                  }
-                  className={`${baseBtn} ${
-                    editor.isActive("heading", { level: 2 })
-                      ? activeBtn
-                      : inactiveBtn
-                  }`}
-                  aria-label="H2"
-                  title="Heading 2"
-                >
-                  <FaHeading className="mr-1" /> H2
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    editor.chain().focus().toggleHeading({ level: 3 }).run()
-                  }
-                  className={`${baseBtn} ${
-                    editor.isActive("heading", { level: 3 })
-                      ? activeBtn
-                      : inactiveBtn
-                  }`}
-                  aria-label="H3"
-                  title="Heading 3"
-                >
-                  <FaHeading className="mr-1" /> H3
-                </button>
-                <button
-                  type="button"
-                  onClick={() => editor.chain().focus().toggleBold().run()}
-                  className={`${baseBtn} ${
-                    editor.isActive("bold") ? activeBtn : inactiveBtn
-                  }`}
-                  aria-label="Bold"
-                  title="Bold"
-                >
-                  <FaBold />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => editor.chain().focus().toggleItalic().run()}
-                  className={`${baseBtn} ${
-                    editor.isActive("italic") ? activeBtn : inactiveBtn
-                  }`}
-                  aria-label="Italic"
-                  title="Italic"
-                >
-                  <FaItalic />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => editor.chain().focus().toggleUnderline().run()}
-                  className={`${baseBtn} ${
-                    editor.isActive("underline") ? activeBtn : inactiveBtn
-                  }`}
-                  aria-label="Underline"
-                  title="Underline"
-                >
-                  <FaUnderline />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => editor.chain().focus().toggleStrike().run()}
-                  className={`${baseBtn} ${
-                    editor.isActive("strike") ? activeBtn : inactiveBtn
-                  }`}
-                  aria-label="Strikethrough"
-                  title="Strikethrough"
-                >
-                  <FaStrikethrough />
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    editor.chain().focus().toggleBulletList().run()
-                  }
-                  className={`${baseBtn} ${
-                    editor.isActive("bulletList") ? activeBtn : inactiveBtn
-                  }`}
-                  aria-label="Bullet List"
-                  title="Bullet List"
-                >
-                  <FaListUl />
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    editor.chain().focus().toggleOrderedList().run()
-                  }
-                  className={`${baseBtn} ${
-                    editor.isActive("orderedList") ? activeBtn : inactiveBtn
-                  }`}
-                  aria-label="Ordered List"
-                  title="Ordered List"
-                >
-                  <FaListOl />
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    editor.chain().focus().unsetAllMarks().clearNodes().run()
-                  }
-                  className={`${baseBtn} ${inactiveBtn}`}
-                  aria-label="Clear Formatting"
-                  title="Clear Formatting"
-                >
-                  <FaEraser />
-                </button>
-              </div>
-              <EditorContent editor={editor} className="tiptap-editor" />
-            </div>
+
+            <Editor
+        ref={quillRef}
+        readOnly={false}
+        defaultValue={new Delta().insert("Write or generate a job description...\n")}
+        onTextChange={(delta, oldDelta, source) => {
+          if (source === "user") {
+            setFormData((prev) => ({
+              ...prev,
+              jobOverview: quillRef.current.getText(), // sync with state
+            }));
+          }
+        }}
+      />
+          
 
             <div>
               <label className="block text-sm font-semibold text-gray-800">

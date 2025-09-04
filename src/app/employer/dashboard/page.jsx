@@ -159,6 +159,9 @@ const EmployerDashboard = () => {
     setSelectedCompany(selectedCompany);
   };
 
+
+  console.log("isLoggedIn", isLoggedIn);
+
   if (
     isLoggedIn.is_verified === 1 ||
     isLoggedIn.is_verified === null ||
@@ -351,21 +354,10 @@ const EmployerDashboard = () => {
           {isVisible && (
             <div className="flex items-center bg-red-100 text-red-700 border border-red-300 rounded-lg p-4 shadow-lg  mx-auto mb-4">
               <div className="mr-4">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  fill="currentColor"
-                  className="bi bi-exclamation-circle text-red-700"
-                  viewBox="0 0 16 16"
-                >
-                  <path d="M8 1a7 7 0 1 0 7 7 7 7 0 0 0-7-7zm0 12a5 5 0 1 1 5-5 5 5 0 0 1-5 5z" />
-                  <path d="M7.002 5.001a.5.5 0 0 1 .492.41L7.5 5.5v3a.5.5 0 0 1-.992.09L6.5 8.5V5.5a.5.5 0 0 1 .502-.499z" />
-                  <path d="M8 10a.5.5 0 0 1 .5.5V11a.5.5 0 0 1-.992.09L7.5 11v-.5a.5.5 0 0 1 .5-.5z" />
-                </svg>
+            
               </div>
               <div className="flex-1">
-                <p className="m-0">{isLoggedIn.remark}</p>
+                <p className="m-0">{isLoggedIn.remark }</p>
               </div>
               <button
                 onClick={handleClose}
