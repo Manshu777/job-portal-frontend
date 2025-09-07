@@ -60,6 +60,7 @@ const CandidatesDashboard = () => {
 
   // Experience range options remain unchanged
   const experienceOptions = [
+    { value: '0', label: 'Fresher' },
     { value: '0.25', label: '3 Months' },
     { value: '0.5', label: '6 Months' },
     ...Array.from({ length: 30 }, (_, i) => ({
@@ -477,7 +478,7 @@ const CandidatesDashboard = () => {
                   onChange={handleInputChange}
                   className="mt-1 w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
                 >
-                  <option value="">Not Required</option>
+                  <option value="">Under Graduate</option>
                   <option value="graduate">Graduate</option>
                   <option value="post-graduate">Post Graduate</option>
                   <option value="others">Others</option>
