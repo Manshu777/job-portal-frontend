@@ -2888,8 +2888,8 @@ const renderStepContent = () => {
                 <div className="mt-4 space-y-2">
                   <p><span className="font-medium text-gray-600">Job Overview:</span></p>
                   <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: formData.jobOverview || "Not specified" }} />
-                  <p><span className="font-medium text-gray-600">Required Skills:</span> {formData.requiredSkills.length > 0 ? formData.requiredSkills.join(", ") : "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Optional Perks:</span> {formData.perks.length > 0 ? formData.perks.join(", ") : "None"}</p>
+                  <p><span className="font-medium text-gray-600">Required Skills:</span> {formData?.requiredSkills?.length > 0 ? formData.requiredSkills.join(", ") : "Not specified"}</p>
+                  <p><span className="font-medium text-gray-600">Optional Perks:</span> {formData?.perks?.length > 0 ? formData?.perks?.join(", ") : "None"}</p>
                 </div>
               </div>
 

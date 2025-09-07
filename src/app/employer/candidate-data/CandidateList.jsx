@@ -11,12 +11,13 @@ import {
   AcademicCapIcon,
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
-
 import { BiMedal } from "react-icons/bi";
 import { MdWorkHistory } from 'react-icons/md';
 import { baseurl } from '@/app/components/common';
 import { FaMapMarkerAlt, FaGlobe, FaPhone, FaCoins, FaFileAlt, FaKey, FaBan, FaUser, FaGraduationCap, FaLanguage, FaCity, FaBriefcase, FaClock } from 'react-icons/fa';
-  const ageRange = Array.from({ length: 33 }, (_, i) => 18 + i); // 18 to 50
+
+const ageRange = Array.from({ length: 33 }, (_, i) => 18 + i); // 18 to 50
+
 const ProfileDetails = ({ icon, label, value }) => (
   <div className="flex items-center gap-3">
     <div className="text-[#02325a]">{icon}</div>
@@ -47,8 +48,7 @@ const getRandomColor = (seed) => {
   return colors[index];
 };
 
-
-const CandidateCard = ({ candidate,onViewProfile }) => {
+const CandidateCard = ({ candidate, onViewProfile }) => {
   const [showPhone, setShowPhone] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState(candidate.number || 'xxxxxxx');
   const [isLoading, setIsLoading] = useState(false);
@@ -67,10 +67,9 @@ const CandidateCard = ({ candidate,onViewProfile }) => {
     return num.toString();
   }
 
-    const toggleSidebar = () => {
+  const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
-
 
   const revealNumber = async (candidateId) => {
     setIsLoading(true);
@@ -101,7 +100,7 @@ const CandidateCard = ({ candidate,onViewProfile }) => {
 
   const skills = candidate.skills
     ? Array.isArray(candidate.skills)
-      ? candidate.skills.slice(0, 4) // Limit to 4 skills
+      ? candidate.skills.slice(0, 4)
       : []
     : [];
 
@@ -129,7 +128,7 @@ const CandidateCard = ({ candidate,onViewProfile }) => {
     }
   })();
 
-   const candidateSkils = (() => {
+  const candidateSkills = (() => {
     try {
       return JSON.parse(candidate.skills || "[]");
     } catch {
@@ -141,129 +140,130 @@ const CandidateCard = ({ candidate,onViewProfile }) => {
   const experience = `${candidate.experience_years || 0} yrs ${candidate.experience_months || 0} mos`;
 
   const colorClass = getRandomColor(candidate.id || candidate.full_name);
+
   return (
-        <>
-    <div className="bg-white rounded-lg shadow p-5 border border-gray-200 flex flex-col gap-3 mb-6 max-w-3xl">
-      <div className="flex items-center gap-2">
-        <div className={`bg-[#02325a] px-4 py-2 rounded-full text-2xl font-semibold text-white`} >
-          {candidate?.full_name?.charAt(0) || 'N'}
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800">{candidate.full_name}</h3>
-          <div className='flex mt-1 gap-2'>
-            {!isFresher && (
-              <>
+    <>
+      <div className="bg-white rounded-lg shadow p-5 border border-gray-200 flex flex-col gap-3 mb-6 max-w-3xl">
+        <div className="flex items-center gap-2">
+          <div className={`bg-[#02325a] px-4 py-2 rounded-full text-2xl font-semibold text-white`}>
+            {candidate?.full_name?.charAt(0) || 'N'}
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800">{candidate.full_name}</h3>
+            <div className='flex mt-1 gap-2'>
+              {!isFresher && (
+                <>
+                  <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
+                    <FaBriefcase className="text-base text-[#02325a]" />
+                    {experience}
+                  </div>
+                  <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
+                    <FaCoins className="text-base text-[#02325a]" />
+                    {formatIndianSalary(candidate.current_salary)}
+                  </div>
+                </>
+              )}
+              {isFresher && (
                 <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
-                  <FaBriefcase className="text-base text-[#02325a]" />
-                  {experience}
+                  <span className="bg-green-100 text-green-800 rounded-full px-3 py-1">Fresher</span>
                 </div>
-                <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
-                  <FaCoins className="text-base text-[#02325a]" />
-                  {formatIndianSalary(candidate.current_salary)}
-                </div>
-              </>
-            )}
-            {isFresher && (
+              )}
               <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
-                <span className="bg-green-100 text-green-800 rounded-full px-3 py-1">Fresher</span>
+                <FaMapMarkerAlt className="text-base text-[#02325a]" />
+                {candidate.city}, {candidate.state}
               </div>
-            )}
-            <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
-              <FaMapMarkerAlt className="text-base text-[#02325a]" />
-              {candidate.city}, {candidate.state}
             </div>
           </div>
         </div>
-      </div>
-      <div className="flex items-center justify-items-start flex-col my-4 gap-2">
-        {!isFresher && (
+        <div className="flex items-center justify-items-start flex-col my-4 gap-2">
+          {!isFresher && (
+            <div className='flex w-full gap-5 my-1'>
+              <span className='text-xl flex items-center gap-2 text-gray-500'>
+                <FaBriefcase className='text-[20px]' />Current / Latest
+              </span>
+              <span className="flex text-xl items-center text-[#02325a] gap-1">
+                {candidate.job_title}, {candidate.company_name}
+              </span>
+            </div>
+          )}
           <div className='flex w-full gap-5 my-1'>
             <span className='text-xl flex items-center gap-2 text-gray-500'>
-              <FaBriefcase className='text-[20px]' />Current / Latest
+              <FaMapMarkerAlt className='text-[20px]' />Pref. Location
             </span>
             <span className="flex text-xl items-center text-[#02325a] gap-1">
-              {candidate.job_title}, {candidate.company_name}
+              {preferredLocations.length > 0 ? preferredLocations.join(', ') : `${candidate.city}, ${candidate.state}`}
             </span>
           </div>
-        )}
-        <div className='flex w-full gap-5 my-1'>
-          <span className='text-xl flex items-center gap-2 text-gray-500'>
-            <FaMapMarkerAlt className='text-[20px]' />Pref. Location
-          </span>
-          <span className="flex text-xl items-center text-[#02325a] gap-1">
-            {preferredLocations.length > 0 ? preferredLocations.join(', ') : `${candidate.city}, ${candidate.state}`}
-          </span>
-        </div>
-        <div className='flex w-full gap-5 my-1'>
-          <span className='text-xl flex items-center gap-2 text-gray-500'>
-            <FaBriefcase className='text-[20px]' />Pref. Job Titles
-          </span>
-          <span className="flex text-xl items-center text-[#02325a] gap-1">
-            {preferredJobTitles.length > 0 ? preferredJobTitles.join(', ') : 'Not specified'}
-          </span>
-        </div>
-        <div className='flex w-full gap-5 my-1'>
-          <span className='text-xl flex items-center gap-2 text-gray-500'>
-            <BiMedal className='text-[20px]' />Skills
-          </span>
-          <span className="flex text-xl items-center text-[#02325a] gap-1">
-            {candidateSkils && candidateSkils.length > 0 ? (
-              candidateSkils.map((skill, idx) => (
-                <span key={idx} className="bg-blue-50 text-[#02325a] rounded-full px-3 py-1">
-                  {skill}
-                </span>
-              ))
-            ) : (
-              <span className="text-gray-400">No skills listed</span>
-            )}
-          </span>
-        </div>
-        <div className='flex w-full gap-5 my-1'>
-          <span className='text-xl flex items-center gap-2 text-gray-500'>
-            <FaGraduationCap className='text-[20px]' />Education
-          </span>
-          <span className="flex text-xl items-center text-[#02325a] gap-1">
-            {candidate.degree} in {candidate.specialization}, {candidate.college_name}
-          </span>
-        </div>
-      </div>
-      <div className="mt-1  flex justify-between">
-        {candidate.number_revealed ? (
-          <div className="flex items-center bg-blue-100 text-blue-900 px-4 py-2 rounded-lg font-bold gap-2 w-fit">
-            <FaPhone /> {candidate.number}
+          <div className='flex w-full gap-5 my-1'>
+            <span className='text-xl flex items-center gap-2 text-gray-500'>
+              <FaBriefcase className='text-[20px]' />Pref. Job Titles
+            </span>
+            <span className="flex text-xl items-center text-[#02325a] gap-1">
+              {preferredJobTitles.length > 0 ? preferredJobTitles.join(', ') : 'Not specified'}
+            </span>
           </div>
-        ) : (
+          <div className='flex w-full gap-5 my-1'>
+            <span className='text-xl flex items-center gap-2 text-gray-500'>
+              <BiMedal className='text-[20px]' />Skills
+            </span>
+            <span className="flex text-xl items-center text-[#02325a] gap-1">
+              {candidateSkills && candidateSkills.length > 0 ? (
+                candidateSkills.map((skill, idx) => (
+                  <span key={idx} className="bg-blue-50 text-[#02325a] rounded-full px-3 py-1">
+                    {skill}
+                  </span>
+                ))
+              ) : (
+                <span className="text-gray-400">No skills listed</span>
+              )}
+            </span>
+          </div>
+          <div className='flex w-full gap-5 my-1'>
+            <span className='text-xl flex items-center gap-2 text-gray-500'>
+              <FaGraduationCap className='text-[20px]' />Education
+            </span>
+            <span className="flex text-xl items-center text-[#02325a] gap-1">
+              {candidate.degree} in {candidate.specialization}, {candidate.college_name}
+            </span>
+          </div>
+        </div>
+        <div className="mt-1 flex justify-between">
+          {candidate.number_revealed ? (
+            <div className="flex items-center bg-blue-100 text-blue-900 px-4 py-2 rounded-lg font-bold gap-2 w-fit">
+              <FaPhone /> {candidate.number}
+            </div>
+          ) : (
+            <button
+              className={`bg-[#02325a] text-white py-2 px-4 rounded-lg font-medium flex items-center gap-2 hover:bg-blue-700 transition ${
+                isLoading || showPhone ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+              onClick={() => revealNumber(candidate.id)}
+              disabled={isLoading || showPhone}
+            >
+              <FaPhone />
+              {isLoading ? 'Revealing...' : showPhone ? phoneNumber : 'View Phone Number'}
+            </button>
+          )}
           <button
-            className={`bg-[#02325a] text-white py-2 px-4 rounded-lg font-medium flex items-center gap-2 hover:bg-blue-700 transition ${
-              isLoading || showPhone ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-            onClick={() => revealNumber(candidate.id)}
-            disabled={isLoading || showPhone}
-          >
-            <FaPhone />
-            {isLoading ? 'Revealing...' : showPhone ? phoneNumber : 'View Phone Number'}
-          </button>
-        )}
-
-         <button
             className="bg-green-600 text-white py-2 px-4 rounded-lg font-medium flex items-center gap-2 hover:bg-green-700 transition"
             onClick={toggleSidebar}
           >
-            <FaUser /> View Profile
+            <FaUser /> View Full Profile Free 
           </button>
+        </div>
       </div>
-    </div>
 
-
-       <div
-        className={`fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out z-50 ${
+      <div
+        className={`fixed top-0 right-0 h-full w-full sm:w-[600px] bg-gradient-to-br from-white to-gray-100 shadow-2xl transform transition-transform duration-500 ease-in-out z-50 ${
           isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
-           >
-        <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-xl font-semibold text-gray-800">Candidate Profile</h2>
+      >
+        <div className="flex justify-between items-center p-6 border-b bg-white/80 backdrop-blur-sm">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <FaUser className="text-[#02325a]" /> Candidate Profile
+          </h2>
           <button
-            className="text-gray-600 hover:text-gray-800"
+            className="text-white bg-[#02325a] hover:bg-blue-700 rounded-full p-2 transition-colors"
             onClick={toggleSidebar}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -271,107 +271,145 @@ const CandidateCard = ({ candidate,onViewProfile }) => {
             </svg>
           </button>
         </div>
-        <div className="p-6 overflow-y-auto h-full">
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-medium text-gray-700">Personal Information</h3>
-              <p className="text-sm text-gray-600"><strong>Full Name:</strong> {candidate.full_name}</p>
-              <p className="text-sm text-gray-600"><strong>Email:</strong> {candidate.email}</p>
-              <p className="text-sm text-gray-600"><strong>Phone:</strong> {candidate.number_revealed ? candidate.number : phoneNumber}</p>
-              <p className="text-sm text-gray-600"><strong>Gender:</strong> {candidate.gender}</p>
-              <p className="text-sm text-gray-600"><strong>Date of Birth:</strong> {new Date(candidate.dob).toLocaleDateString()}</p>
-              <p className="text-sm text-gray-600"><strong>Address:</strong> {candidate.address}</p>
-              <p className="text-sm text-gray-600"><strong>City:</strong> {candidate.city}</p>
-              <p className="text-sm text-gray-600"><strong>State:</strong> {candidate.state}</p>
+        <div className="p-8 overflow-y-auto h-full">
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow-md p-6 transition-transform hover:scale-[1.02] duration-300">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <FaUser className="text-[#02325a]" /> Personal Information
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <p className="text-sm text-gray-600"><strong>Full Name:</strong> {candidate.full_name}</p>
+                <p className="text-sm text-gray-600"><strong>Email:</strong> {candidate.email}</p>
+                <p className="text-sm text-gray-600"><strong>Phone:</strong> {candidate.number_revealed ? candidate.number : phoneNumber}</p>
+                <p className="text-sm text-gray-600"><strong>Gender:</strong> {candidate.gender}</p>
+                <p className="text-sm text-gray-600"><strong>Date of Birth:</strong> {new Date(candidate.dob).toLocaleDateString()}</p>
+                <p className="text-sm text-gray-600"><strong>Address:</strong> {candidate.address}</p>
+                <p className="text-sm text-gray-600"><strong>City:</strong> {candidate.city}</p>
+                <p className="text-sm text-gray-600"><strong>State:</strong> {candidate.state}</p>
+              </div>
             </div>
 
-            <div>
-              <h3 className="text-lg font-medium text-gray-700">Professional Details</h3>
-              <p className="text-sm text-gray-600"><strong>Job Title:</strong> {candidate.job_title || 'N/A'}</p>
-              <p className="text-sm text-gray-600"><strong>Company:</strong> {candidate.company_name || 'N/A'}</p>
-              <p className="text-sm text-gray-600"><strong>Experience:</strong> {formatExperience()}</p>
-              <p className="text-sm text-gray-600"><strong>Current Salary:</strong> {formatIndianSalary(candidate.current_salary)}</p>
-              <p className="text-sm text-gray-600"><strong>Employment Type:</strong> {candidate.employment_type || 'N/A'}</p>
-              <p className="text-sm text-gray-600"><strong>Experience Level:</strong> {candidate.experience_level || 'N/A'}</p>
-              <p className="text-sm text-gray-600"><strong>Job Roles:</strong> {jobRoles.length > 0 ? jobRoles.join(', ') : 'None'}</p>
+            <div className="bg-white rounded-lg shadow-md p-6 transition-transform hover:scale-[1.02] duration-300">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <FaBriefcase className="text-[#02325a]" /> Professional Details
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <p className="text-sm text-gray-600"><strong>Job Title:</strong> {candidate.job_title || 'N/A'}</p>
+                <p className="text-sm text-gray-600"><strong>Company:</strong> {candidate.company_name || 'N/A'}</p>
+                <p className="text-sm text-gray-600"><strong>Experience:</strong> {formatExperience()}</p>
+                <p className="text-sm text-gray-600"><strong>Current Salary:</strong> {formatIndianSalary(candidate.current_salary)}</p>
+                <p className="text-sm text-gray-600"><strong>Employment Type:</strong> {candidate.employment_type || 'N/A'}</p>
+                <p className="text-sm text-gray-600"><strong>Experience Level:</strong> {candidate.experience_level || 'N/A'}</p>
+                <p className="text-sm text-gray-600"><strong>Job Roles:</strong> {jobRoles.length > 0 ? jobRoles.join(', ') : 'None'}</p>
+              </div>
             </div>
 
-            <div>
-              <h3 className="text-lg font-medium text-gray-700">Education</h3>
-              <p className="text-sm text-gray-600"><strong>Degree:</strong> {candidate.degree || 'N/A'}</p>
-              <p className="text-sm text-gray-600"><strong>Specialization:</strong> {candidate.specialization || 'N/A'}</p>
-              <p className="text-sm text-gray-600"><strong>College:</strong> {candidate.college_name || 'N/A'}</p>
-              <p className="text-sm text-gray-600"><strong>Passing Marks:</strong> {candidate.passing_marks || 'N/A'}</p>
-              <p className="text-sm text-gray-600"><strong>Education Level:</strong> {candidate.education_level || 'N/A'}</p>
-              <p className="text-sm text-gray-600"><strong>Currently Pursuing:</strong> {candidate.currently_pursuing || 'N/A'}</p>
-              <p className="text-sm text-gray-600"><strong>Highest Education:</strong> {candidate.highest_education || 'N/A'}</p>
+            <div className="bg-white rounded-lg shadow-md p-6 transition-transform hover:scale-[1.02] duration-300">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <FaGraduationCap className="text-[#02325a]" /> Education
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <p className="text-sm text-gray-600"><strong>Degree:</strong> {candidate.degree || 'N/A'}</p>
+                <p className="text-sm text-gray-600"><strong>Specialization:</strong> {candidate.specialization || 'N/A'}</p>
+                <p className="text-sm text-gray-600"><strong>College:</strong> {candidate.college_name || 'N/A'}</p>
+                <p className="text-sm text-gray-600"><strong>Passing Marks:</strong> {candidate.passing_marks || 'N/A'}</p>
+                <p className="text-sm text-gray-600"><strong>Education Level:</strong> {candidate.education_level || 'N/A'}</p>
+                <p className="text-sm text-gray-600"><strong>Currently Pursuing:</strong> {candidate.currently_pursuing || 'N/A'}</p>
+                <p className="text-sm text-gray-600"><strong>Highest Education:</strong> {candidate.highest_education || 'N/A'}</p>
+              </div>
             </div>
 
-            <div>
-              <h3 className="text-lg font-medium text-gray-700">Preferences</h3>
-              <p className="text-sm text-gray-600"><strong>Preferred Job Titles:</strong> {preferredJobTitles.length > 0 ? preferredJobTitles.join(', ') : 'Not specified'}</p>
-              <p className="text-sm text-gray-600"><strong>Preferred Locations:</strong> {preferredLocations.length > 0 ? preferredLocations.join(', ') : 'Not specified'}</p>
-              <p className="text-sm text-gray-600"><strong>Preferred Languages:</strong> {candidate.preferred_language || 'Not specified'}</p>
-              <p className="text-sm text-gray-600"><strong>Prefers Night Shift:</strong> {candidate.prefers_night_shift ? 'Yes' : 'No'}</p>
-              <p className="text-sm text-gray-600"><strong>Prefers Day Shift:</strong> {candidate.prefers_day_shift ? 'Yes' : 'No'}</p>
-              <p className="text-sm text-gray-600"><strong>Work from Home:</strong> {candidate.work_from_home ? 'Yes' : 'No'}</p>
-              <p className="text-sm text-gray-600"><strong>Work from Office:</strong> {candidate.work_from_office ? 'Yes' : 'No'}</p>
-              <p className="text-sm text-gray-600"><strong>Field Job:</strong> {candidate.field_job ? 'Yes' : 'No'}</p>
+            <div className="bg-white rounded-lg shadow-md p-6 transition-transform hover:scale-[1.02] duration-300">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <FaFileAlt className="text-[#02325a]" /> Resume
+              </h3>
+              {candidate.has_resume ? (
+                <a
+                  href={`${baseurl}/resume/${candidate.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline flex items-center gap-2 font-medium"
+                >
+                  <FaFileAlt /> View Resume
+                </a>
+              ) : (
+                <p className="text-sm text-gray-600">No resume available</p>
+              )}
             </div>
 
-            <div>
-              <h3 className="text-lg font-medium text-gray-700">Skills</h3>
+            <div className="bg-white rounded-lg shadow-md p-6 transition-transform hover:scale-[1.02] duration-300">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <FaGlobe className="text-[#02325a]" /> Preferences
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <p className="text-sm text-gray-600"><strong>Preferred Job Titles:</strong> {preferredJobTitles.length > 0 ? preferredJobTitles.join(', ') : 'Not specified'}</p>
+                <p className="text-sm text-gray-600"><strong>Preferred Locations:</strong> {preferredLocations.length > 0 ? preferredLocations.join(', ') : 'Not specified'}</p>
+                <p className="text-sm text-gray-600"><strong>Preferred Languages:</strong> {candidate.preferred_language || 'Not specified'}</p>
+                <p className="text-sm text-gray-600"><strong>Prefers Night Shift:</strong> {candidate.prefers_night_shift ? 'Yes' : 'No'}</p>
+                <p className="text-sm text-gray-600"><strong>Prefers Day Shift:</strong> {candidate.prefers_day_shift ? 'Yes' : 'No'}</p>
+                <p className="text-sm text-gray-600"><strong>Work from Home:</strong> {candidate.work_from_home ? 'Yes' : 'No'}</p>
+                <p className="text-sm text-gray-600"><strong>Work from Office:</strong> {candidate.work_from_office ? 'Yes' : 'No'}</p>
+                <p className="text-sm text-gray-600"><strong>Field Job:</strong> {candidate.field_job ? 'Yes' : 'No'}</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-6 transition-transform hover:scale-[1.02] duration-300">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <BiMedal className="text-[#02325a]" /> Skills
+              </h3>
               <div className="flex flex-wrap gap-2">
-                {/* {candidateSkills.length > 0 ? (
+                {candidateSkills.length > 0 ? (
                   candidateSkills.map((skill, idx) => (
-                    <span key={idx} className="bg-blue-50 text-[#02325a] rounded-full px-3 py-1 text-sm">
+                    <span key={idx} className="bg-blue-50 text-[#02325a] rounded-full px-3 py-1 text-sm font-medium">
                       {skill}
                     </span>
                   ))
                 ) : (
                   <p className="text-sm text-gray-600">No skills listed</p>
-                )} */}
+                )}
               </div>
             </div>
 
-            <div>
-              <h3 className="text-lg font-medium text-gray-700">Activity</h3>
-              <p className="text-sm text-gray-600"><strong>Active User:</strong> {candidate.active_user ? 'Yes' : 'No'}</p>
-              <p className="text-sm text-gray-600"><strong>Last Login:</strong> {candidate.last_login ? new Date(candidate.last_login).toLocaleString() : 'N/A'}</p>
-              <p className="text-sm text-gray-600"><strong>Total Jobs Applied:</strong> {candidate.total_jobs_applied || 0}</p>
-              <p className="text-sm text-gray-600"><strong>Total Job Views:</strong> {candidate.total_job_views || 0}</p>
-              <p className="text-sm text-gray-600"><strong>Profile Visited:</strong> {candidate.profile_visited ? 'Yes' : 'No'}</p>
-              <p className="text-sm text-gray-600"><strong>Created At:</strong> {candidate.created_at ? new Date(candidate.created_at).toLocaleString() : 'N/A'}</p>
-              <p className="text-sm text-gray-600"><strong>Updated At:</strong> {candidate.updated_at ? new Date(candidate.updated_at).toLocaleString() : 'N/A'}</p>
+            <div className="bg-white rounded-lg shadow-md p-6 transition-transform hover:scale-[1.02] duration-300">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <FaClock className="text-[#02325a]" /> Activity
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <p className="text-sm text-gray-600"><strong>Active User:</strong> {candidate.active_user ? 'Yes' : 'No'}</p>
+                <p className="text-sm text-gray-600"><strong>Last Login:</strong> {candidate.last_login ? new Date(candidate.last_login).toLocaleString() : 'N/A'}</p>
+                <p className="text-sm text-gray-600"><strong>Total Jobs Applied:</strong> {candidate.total_jobs_applied || 0}</p>
+                <p className="text-sm text-gray-600"><strong>Total Job Views:</strong> {candidate.total_job_views || 0}</p>
+                <p className="text-sm text-gray-600"><strong>Profile Visited:</strong> {candidate.profile_visited ? 'Yes' : 'No'}</p>
+                <p className="text-sm text-gray-600"><strong>Created At:</strong> {candidate.created_at ? new Date(candidate.created_at).toLocaleString() : 'N/A'}</p>
+                <p className="text-sm text-gray-600"><strong>Updated At:</strong> {candidate.updated_at ? new Date(candidate.updated_at).toLocaleString() : 'N/A'}</p>
+              </div>
             </div>
 
-            <div>
-              <h3 className="text-lg font-medium text-gray-700">Additional Information</h3>
-              <p className="text-sm text-gray-600"><strong>English Level:</strong> {candidate.english_level || 'Not specified'}</p>
-              <p className="text-sm text-gray-600"><strong>Notice Period:</strong> {candidate.notice_period || 'Not specified'}</p>
-              <p className="text-sm text-gray-600"><strong>Experience Type:</strong> {candidate.experience_type || 'Not specified'}</p>
-              <p className="text-sm text-gray-600"><strong>Start Date:</strong> {candidate.start_date ? new Date(candidate.start_date).toLocaleDateString() : 'N/A'}</p>
-              <p className="text-sm text-gray-600"><strong>End Date:</strong> {candidate.end_date ? new Date(candidate.end_date).toLocaleDateString() : 'N/A'}</p>
+            <div className="bg-white rounded-lg shadow-md p-6 transition-transform hover:scale-[1.02] duration-300 mb-[100px]">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <FaGlobe className="text-[#02325a]" /> Additional Information
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <p className="text-sm text-gray-600"><strong>English Level:</strong> {candidate.english_level || 'Not specified'}</p>
+                <p className="text-sm text-gray-600"><strong>Notice Period:</strong> {candidate.notice_period || 'Not specified'}</p>
+                <p className="text-sm text-gray-600"><strong>Experience Type:</strong> {candidate.experience_type || 'Not specified'}</p>
+                <p className="text-sm text-gray-600"><strong>Start Date:</strong> {candidate.start_date ? new Date(candidate.start_date).toLocaleDateString() : 'N/A'}</p>
+                <p className="text-sm text-gray-600"><strong>End Date:</strong> {candidate.end_date ? new Date(candidate.end_date).toLocaleDateString() : 'N/A'}</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Overlay for sidebar */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black opacity-50 z-40"
           onClick={toggleSidebar}
         ></div>
       )}
-
-
-    
     </>
   );
 };
-
-
 
 const SkeletonLoader = () => (
   <div className="animate-pulse space-y-4 p-5 sm:p-6 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl">
@@ -401,7 +439,7 @@ const CandidateList = () => {
     const params = Object.fromEntries(searchParams);
     return {
       has_resume: false,
-      number_revealed: false,
+      number_revealed: params.number_revealed || '',
       must_have_keywords: params.keywords || '',
       exclude_keywords: '',
       active: params.active || '',
@@ -429,7 +467,7 @@ const CandidateList = () => {
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({
     current_page: 1,
-   last_page: 1,
+    last_page: 1,
     next_page_url: null,
     prev_page_url: null,
     total: 0,
@@ -450,14 +488,13 @@ const CandidateList = () => {
         ...Object.fromEntries(
           Object.entries(filters).filter(([key, value]) => {
             if (Array.isArray(value)) return value.length > 0;
-            if (key === 'has_resume' || key === 'number_revealed') return true;
+            if (key === 'has_resume') return true;
             return value !== '' && value !== false && value !== null;
           })
         ),
         page,
         per_page: perPage,
         has_resume: filters.has_resume ? '1' : '0',
-        number_revealed: filters.number_revealed ? '1' : '0',
         ...(filters.experience_type.length > 0 && { experience_type: filters.experience_type.join(',') }),
         ...(filters.shift_preference.length > 0 && { shift_preference: filters.shift_preference }),
       }).toString();
@@ -483,7 +520,7 @@ const CandidateList = () => {
 
   const handleFilterChange = (e) => {
     const { name, value, type, checked } = e.target;
-    if (type === 'checkbox' && (name === 'has_resume' || name === 'number_revealed')) {
+    if (type === 'checkbox' && name === 'has_resume') {
       setFilters((prev) => ({ ...prev, [name]: checked }));
     } else if (type === 'checkbox' && name === 'experience_type') {
       setFilters((prev) => ({
@@ -517,7 +554,7 @@ const CandidateList = () => {
     const cleanedFilters = Object.fromEntries(
       Object.entries(filters).filter(([key, value]) => {
         if (Array.isArray(value)) return value.length > 0;
-        if (key === 'has_resume' || key === 'number_revealed') return value === true;
+        if (key === 'has_resume') return value === true;
         return value !== '' && value !== false && value !== null;
       })
     );
@@ -531,7 +568,7 @@ const CandidateList = () => {
       education: cleanedFilters.degree || '',
       active: cleanedFilters.active || '',
       experienceType: cleanedFilters.experience_type?.length > 0 ? cleanedFilters.experience_type.join(',') : 'any',
-      numberRevealed: cleanedFilters.number_revealed ? '1' : '0',
+      numberRevealed: cleanedFilters.number_revealed || '',
     };
     const query = new URLSearchParams(urlParams).toString();
     router.push(`/employer/candidate-data?${query}`, { scroll: false });
@@ -559,7 +596,7 @@ const CandidateList = () => {
       <Sidebar />
       <div className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 overflow-auto">
         <div className="flex flex-col justify-end lg:flex-row gap-6 lg:gap-8 max-w-7xl mx-auto w-full">
-          <div className="sticky top-4">
+          <div className="sticky w-[35%] top-4">
             <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl p-6 sm:p-8 border border-gray-100">
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 flex items-center">
                 <FaUser className="mr-2 text-[#02325a]" /> Filter Candidates
@@ -578,16 +615,22 @@ const CandidateList = () => {
                   </label>
                 </div>
                 <div>
-                  <label className="flex items-center text-sm font-medium text-gray-700">
-                    <input
-                      type="checkbox"
-                      name="number_revealed"
-                      checked={filters.number_revealed}
-                      onChange={handleFilterChange}
-                      className="mr-2 h-5 w-5 text-[#02325a] focus:ring-blue-500 border-gray-300 rounded"
-                    />
+                  <label className="text-sm font-medium text-gray-700 flex items-center">
                     <FaPhone className="mr-2 text-[#02325a]" /> Number Revealed
                   </label>
+                  <select
+                    name="number_revealed"
+                    value={filters.number_revealed}
+                    onChange={handleFilterChange}
+                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
+                  >
+                    <option value="">Select Number Revealed</option>
+                    <option value="1">Revealed</option>
+                    <option value="0">Not Revealed</option>
+                    <option value="last-15-days">Last 15 Days</option>
+                    <option value="last-30-days">Last 30 Days</option>
+                    <option value="last-90-days">Last 90 Days</option>
+                  </select>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 flex items-center">
@@ -631,43 +674,43 @@ const CandidateList = () => {
                   </select>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-      <div>
-        <label className="text-sm font-medium text-gray-700 flex items-center">
-          <FaUser className="mr-2 text-[#02325a]" /> Min Age
-        </label>
-        <select
-          name="min_age"
-          value={filters.min_age}
-          onChange={handleFilterChange}
-          className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
-        >
-          <option value="" disabled>Select Min Age</option>
-          {ageRange
-            .filter(age => !filters.max_age || age <= filters.max_age)
-            .map(age => (
-              <option key={age} value={age}>{age}</option>
-            ))}
-        </select>
-      </div>
-      <div>
-        <label className="text-sm font-medium text-gray-700 flex items-center">
-          <FaUser className="mr-2 text-[#02325a]" /> Max Age
-        </label>
-        <select
-          name="max_age"
-          value={filters.max_age}
-          onChange={handleFilterChange}
-          className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
-        >
-          <option value="" disabled>Select Max Age</option>
-          {ageRange
-            .filter(age => !filters.min_age || age >= filters.min_age)
-            .map(age => (
-              <option key={age} value={age}>{age}</option>
-            ))}
-        </select>
-      </div>
-    </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 flex items-center">
+                      <FaUser className="mr-2 text-[#02325a]" /> Min Age
+                    </label>
+                    <select
+                      name="min_age"
+                      value={filters.min_age}
+                      onChange={handleFilterChange}
+                      className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
+                    >
+                      <option value="" disabled>Select Min Age</option>
+                      {ageRange
+                        .filter(age => !filters.max_age || age <= filters.max_age)
+                        .map(age => (
+                          <option key={age} value={age}>{age}</option>
+                        ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 flex items-center">
+                      <FaUser className="mr-2 text-[#02325a]" /> Max Age
+                    </label>
+                    <select
+                      name="max_age"
+                      value={filters.max_age}
+                      onChange={handleFilterChange}
+                      className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
+                    >
+                      <option value="" disabled>Select Max Age</option>
+                      {ageRange
+                        .filter(age => !filters.min_age || age >= filters.min_age)
+                        .map(age => (
+                          <option key={age} value={age}>{age}</option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 flex items-center">
                     <FaUser className="mr-2 text-[#02325a]" /> Gender
@@ -774,31 +817,13 @@ const CandidateList = () => {
                     ))}
                   </select>
                 </div>
-                {/* <div>
-                  <label className="text-sm font-medium text-gray-700 flex items-center">
-                    <FaLanguage className="mr-2 text-[#02325a]" /> English Fluency
-                  </label>
-                  <select
-                    name="english_fluency"
-                    value={filters?.english_fluency}
-                    onChange={handleFilterChange}
-                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
-                  >
-                    <option value="">Select Fluency Level</option>
-                    <option value="beginner">Beginner</option>
-                    <option value="intermediate">Intermediate</option>
-                    <option value="fluent">Fluent</option>
-                  </select>
-                </div> */}
                 <div>
-                  {/* <label className="text-sm font-medium text-gray-700 flex items-center">
+                  <label className="text-sm font-medium text-gray-700 flex items-center">
                     <FaBriefcase className="mr-2 text-[#02325a]" /> Employment Type
-                  </label> */}
+                  </label>
                   <div className="space-y-2">
-                  {/* {  console.log('employment_types',filterOptions?.employment_types)} */}
                     {filterOptions?.employment_types?.map((option) => (
                       <label key={option.value} className="flex items-center">
-                         {  console.log('employment_types',option)}
                         <input
                           type="checkbox"
                           name="experience_type"
@@ -808,7 +833,7 @@ const CandidateList = () => {
                           className="h-5 w-5 text-[#02325a] focus:ring-blue-500 border-gray-300 rounded"
                         />
                         <span className="ml-2 text-sm text-gray-700 flex items-center">
-                             {option.value} ({option.count})
+                          {option.value} ({option.count})
                         </span>
                       </label>
                     ))}
@@ -835,7 +860,7 @@ const CandidateList = () => {
               </form>
             </div>
           </div>
-          <div className="w-full lg:w-[60%]">
+          <div className="w-[65%]">
             <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
@@ -845,7 +870,7 @@ const CandidateList = () => {
                   onClick={handleBack}
                   className="py-2 px-4 bg-gray-600 text-white rounded-lg text-sm sm:text-base hover:bg-gray-700 transition-colors"
                 >
-                  Back
+                  Modify Serach
                 </button>
               </div>
               {!loading && candidates.length > 0 && (

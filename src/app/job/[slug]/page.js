@@ -7,7 +7,7 @@ export default async function JobDetail({ params }) {
 
   // Fetch job data from the API using the slug
   try {
-    const response = await fetch(`http://147.93.18.63:8000/api/v1/job/${slug}`, {
+    const response = await fetch(`http://localhost:8000/api/v1/job/${slug}`, {
       cache: 'no-store', // Ensure fresh data for SSR
     });
 

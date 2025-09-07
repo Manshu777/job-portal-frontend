@@ -1,8 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '@/app/components/Sidebar';
 import { useRouter } from 'next/navigation';
-import Select, { createFilter } from 'react-select';
+import AsyncCreatableSelect from 'react-select/async-creatable';
 import {
   UserIcon,
   BriefcaseIcon,
@@ -11,6 +11,8 @@ import {
   AcademicCapIcon,
 } from '@heroicons/react/24/outline';
 import { baseurl } from '@/app/components/common';
+import axios from 'axios';
+import Swal from 'sweetalert2';
 
 const CandidatesDashboard = () => {
   const router = useRouter();
@@ -28,39 +30,10 @@ const CandidatesDashboard = () => {
   const [keywordInput, setKeywordInput] = useState('');
   const [locationInput, setLocationInput] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [recentSearches, setRecentSearches] = useState([]);
 
-  // Predefined keyword and location options remain unchanged
-  const keywordOptions = [
-    { value: 'javascript', label: 'JavaScript' },
-    { value: 'python', label: 'Python' },
-    { value: 'react', label: 'React' },
-    { value: 'java', label: 'Java' },
-    { value: 'node', label: 'Node.js' },
-    { value: 'sql', label: 'SQL' },
-    { value: 'typescript', label: 'TypeScript' },
-    { value: 'aws', label: 'AWS' },
-    { value: 'docker', label: 'Docker' },
-    { value: 'graphql', label: 'GraphQL' },
-    { value: 'mongodb', label: 'MongoDB' },
-    { value: 'angular', label: 'Angular' },
-  ];
-
-  const locationOptions = [
-    { value: 'delhi', label: 'Delhi' },
-    { value: 'jaipur', label: 'Jaipur' },
-    { value: 'lucknow', label: 'Lucknow' },
-    { value: 'kanpur', label: 'Kanpur' },
-    { value: 'agra', label: 'Agra' },
-    { value: 'varanasi', label: 'Varanasi' },
-    { value: 'chandigarh', label: 'Chandigarh' },
-    { value: 'amritsar', label: 'Amritsar' },
-    { value: 'ghaziabad', label: 'Ghaziabad' },
-    { value: 'meerut', label: 'Meerut' },
-  ];
-
-  // Experience range options remain unchanged
+  // Experience range options
   const experienceOptions = [
-    { value: '0', label: 'Fresher' },
     { value: '0.25', label: '3 Months' },
     { value: '0.5', label: '6 Months' },
     ...Array.from({ length: 30 }, (_, i) => ({
@@ -77,18 +50,34 @@ const CandidatesDashboard = () => {
     );
   };
 
+  // Load recent searches from localStorage
+  useEffect(() => {
+    const savedSearches = JSON.parse(localStorage.getItem('recentSearches')) || [];
+    setRecentSearches(savedSearches);
+    if (savedSearches.length > 0) {
+      setFormData(savedSearches[0]); // Load the most recent search into the form
+    }
+  }, []);
+
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === 'experienceType') {
-      // Reset experience and salary fields when experienceType changes
+      // Clear localStorage and recent searches when experienceType changes
+      localStorage.removeItem('recentSearches');
+      setRecentSearches([]);
+      // Reset form fields
       setFormData({
         ...formData,
         experienceType: value,
         minExperience: '',
         maxExperience: '',
         minSalary: '',
-        maxSalary: ''
+        maxSalary: '',
+        keywords: [],
+        locations: [],
+        education: '',
+        active: '',
       });
     } else if (name === 'minSalary' || name === 'maxSalary') {
       const numValue = value ? parseInt(value.replace(/,/g, '')) : '';
@@ -187,16 +176,23 @@ const CandidatesDashboard = () => {
 
   // Validate fields
   const validateFields = () => {
-    if (formData.experienceType !== 'fresher') {
-      if (formData.minExperience && formData.maxExperience) {
-        if (parseFloat(formData.minExperience) >= parseFloat(formData.maxExperience)) {
-          return 'Minimum experience must be less than maximum experience';
-        }
+    const { experienceType, keywords, locations, minExperience, maxExperience, education } = formData;
+
+    if (experienceType === 'fresher') {
+      if (education === '') return 'Education is required for Fresher Only';
+    } else if (experienceType === 'experienced') {
+      if (!minExperience || !maxExperience) return 'Minimum and Maximum Experience are required for Experienced';
+      if (parseFloat(minExperience) >= parseFloat(maxExperience)) {
+        return 'Minimum experience must be less than maximum experience';
       }
-      if (formData.minSalary && formData.maxSalary) {
-        if (parseInt(formData.minSalary) >= parseInt(formData.maxSalary)) {
-          return 'Minimum salary must be less than maximum salary';
-        }
+    } else if (experienceType === 'any') {
+      if (keywords.length === 0) return 'At least one Keyword is required for Any';
+      if (education === '') return 'Education is required for Any';
+    }
+
+    if (formData.minSalary && formData.maxSalary) {
+      if (parseInt(formData.minSalary) >= parseInt(formData.maxSalary)) {
+        return 'Minimum salary must be less than maximum salary';
       }
     }
     return null;
@@ -207,16 +203,26 @@ const CandidatesDashboard = () => {
     e.preventDefault();
     const validationError = validateFields();
     if (validationError) {
-      alert(validationError);
+      Swal.fire({
+        icon: 'error',
+        title: 'Validation Error',
+        text: validationError,
+        confirmButtonColor: '#02325a',
+      });
       return;
     }
+
+    const newRecent = [formData, ...recentSearches].slice(0, 5);
+    setRecentSearches(newRecent);
+    localStorage.setItem('recentSearches', JSON.stringify(newRecent));
+
     const queryParams = new URLSearchParams({
       keywords: formData.keywords.map((k) => k.value).join(','),
       locations: formData.locations.map((l) => l.value).join(','),
       minExperience: formData.experienceType === 'fresher' ? '' : formData.minExperience,
       maxExperience: formData.experienceType === 'fresher' ? '' : formData.maxExperience,
       minSalary: formData.experienceType === 'fresher' ? '' : formData.minSalary,
-      maxSalary: formData.experienceType === 'f Fresher Only' ? '' : formData.maxSalary,
+      maxSalary: formData.experienceType === 'fresher' ? '' : formData.maxSalary,
       education: formData.education,
       active: formData.active,
       experienceType: formData.experienceType,
@@ -234,13 +240,14 @@ const CandidatesDashboard = () => {
     return value.replace(/,/g, '');
   };
 
+  // Fetch suggestions from API
   const fetchSuggestions = async (inputValue, type) => {
     if (!inputValue) return [];
     try {
       const response = await axios.get(`${baseurl}/suggestions`, {
         params: { query: inputValue, type },
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`, // Adjust based on your auth setup
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
       });
       return response.data.data;
@@ -250,9 +257,55 @@ const CandidatesDashboard = () => {
     }
   };
 
+  const loadKeywordOptions = (inputValue) => fetchSuggestions(inputValue, 'keywords');
+  const loadLocationOptions = (inputValue) => fetchSuggestions(inputValue, 'locations');
+
+  // Handle loading a recent search
+  const handleLoadRecent = (search) => {
+    setFormData(search);
+  };
+
+  // Recent Searches content for Sidebar
+  const recentSearchesContent = (
+    <div className="p-4">
+      <h2 className="text-lg font-bold text-gray-800 mb-3">Recent Searches</h2>
+      {recentSearches.length > 0 ? (
+        <ul className="space-y-3">
+          {recentSearches.map((search, index) => (
+            <li key={index} className="border-b pb-2">
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-gray-700">
+                  <strong>Type:</strong> {search.experienceType}
+                </span>
+                <span className="text-sm text-gray-600">
+                  <strong>Keywords:</strong> {search.keywords.map(k => k.label).join(', ')}
+                </span>
+                <span className="text-sm text-gray-600">
+                  <strong>Locations:</strong> {search.locations.map(l => l.label).join(', ')}
+                </span>
+                <button
+                  onClick={() => handleLoadRecent(search)}
+                  className="mt-2 py-1 px-2 rounded-lg bg-blue-500 text-white text-sm hover:bg-blue-600"
+                >
+                  Load
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-gray-600">No recent searches</p>
+      )}
+    </div>
+  );
+
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+      <Sidebar
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+        recentSearchesContent={recentSearchesContent}
+      />
       <div className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 overflow-auto">
         <div className="max-w-3xl mx-auto w-full">
           <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
@@ -325,10 +378,9 @@ const CandidatesDashboard = () => {
                 >
                   Keywords (up to 10, type and add with comma or enter)
                 </label>
-                <Select
+                <AsyncCreatableSelect
                   isMulti
                   name="keywords"
-                  options={keywordOptions}
                   value={formData.keywords}
                   onChange={handleKeywordChange}
                   onInputChange={handleKeywordInputChange}
@@ -339,8 +391,7 @@ const CandidatesDashboard = () => {
                   maxMenuHeight={200}
                   isClearable
                   isSearchable
-                  createOptionPosition="first"
-                  filterOption={createFilter({ ignoreCase: true })}
+                  loadOptions={loadKeywordOptions}
                   formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
                 />
               </div>
@@ -445,10 +496,9 @@ const CandidatesDashboard = () => {
                 >
                   Locations (up to 3, type and add with comma or enter)
                 </label>
-                <Select
+                <AsyncCreatableSelect
                   isMulti
                   name="locations"
-                  options={locationOptions}
                   value={formData.locations}
                   onChange={handleLocationChange}
                   onInputChange={handleLocationInputChange}
@@ -459,8 +509,7 @@ const CandidatesDashboard = () => {
                   maxMenuHeight={200}
                   isClearable
                   isSearchable
-                  createOptionPosition="first"
-                  filterOption={createFilter({ ignoreCase: true })}
+                  loadOptions={loadLocationOptions}
                   formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
                 />
               </div>
@@ -478,7 +527,10 @@ const CandidatesDashboard = () => {
                   onChange={handleInputChange}
                   className="mt-1 w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
                 >
-                  <option value="">Under Graduate</option>
+
+                   <option value="">Select Minimum Education</option>
+
+                  <option value="any">Any</option>
                   <option value="graduate">Graduate</option>
                   <option value="post-graduate">Post Graduate</option>
                   <option value="others">Others</option>

@@ -67,7 +67,7 @@ const Dashboard = () => {
   const [newJobRole, setNewJobRole] = useState(""); // Added for job_roles input
   const [error, setError] = useState(""); // Added for error handling
 
-  const storageLink = 'http://147.93.18.63:8000/storage'
+  const storageLink = 'http://localhost:8000/storage'
   const fetchData = async (token) => {
     if (!token) {
       router.push("/");
