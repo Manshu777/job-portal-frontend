@@ -1108,17 +1108,6 @@ const fetchSpecializations = useCallback(async (courseName) => {
     setIsSubmitting(true);
 
   
-    // ✅ Get full HTML from Quill
-    const htmlContent = quillRef.current.root.innerHTML;
-
-    // Save into formData
-    setFormData((prev) => ({
-      ...prev,
-      jobOverview: htmlContent,
-    }));
-
-    console.log("Submitted HTML:", htmlContent);
-  
 
     const apiData = new FormData();
     apiData.append("employer_id", isLoggedIn.id);
