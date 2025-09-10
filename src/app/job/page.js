@@ -11,6 +11,7 @@ import { Briefcase, MapPin, Users, TrendingUp } from "lucide-react";
 
 export default function Home() {
   const [jobs, setJobs] = useState(jobsData);
+   console.log(jobsData, "jobsData");
   const [filteredJobs, setFilteredJobs] = useState(jobsData);
   const [filters, setFilters] = useState({
     location: "",
@@ -140,12 +141,12 @@ export default function Home() {
               </div>
 
               <div className="grid gap-6">
-                {filteredJobs?.map((job) => (
+                {jobsData?.map((job) => (
                   <JobCard key={job.id} job={job} />
                 ))}
               </div>
 
-              {filteredJobs?.length === 0 && (
+              {jobsData?.length === 0 && (
                 <div className="text-center py-12">
                   <div className="text-gray-500 text-lg">
                     No jobs found matching your criteria
