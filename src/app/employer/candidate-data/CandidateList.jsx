@@ -15,6 +15,7 @@ import { BiMedal } from "react-icons/bi";
 import { MdWorkHistory } from 'react-icons/md';
 import { baseurl } from '@/app/components/common';
 import { FaMapMarkerAlt, FaGlobe, FaPhone, FaCoins, FaFileAlt, FaKey, FaBan, FaUser, FaGraduationCap, FaLanguage, FaCity, FaBriefcase, FaClock } from 'react-icons/fa';
+import AsyncCreatableSelect from 'react-select/async-creatable';
 
 const ageRange = Array.from({ length: 33 }, (_, i) => 18 + i); // 18 to 50
 
@@ -28,24 +29,44 @@ const ProfileDetails = ({ icon, label, value }) => (
   </div>
 );
 
-const colors = [
-  'bg-blue-500',
-  'bg-green-500',
-  'bg-red-500',
-  'bg-purple-500',
-  'bg-teal-500',
-  'bg-orange-500',
-  'bg-pink-500',
-  'bg-indigo-500',
-];
+const loadOptions = async (inputValue, field, filterOptions) => {
+  // Simulate API delay
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
-const getRandomColor = (seed) => {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % colors.length;
-  return colors[index];
+  // Map field to the corresponding filterOptions key
+  const fieldMap = {
+    language: 'languages',
+    city: 'cities',
+    specialization: 'specializations',
+    degree: 'degrees',
+  };
+
+  const options = filterOptions[fieldMap[field]] || [];
+  const filteredOptions = options
+    .filter((option) =>
+      option.value.toLowerCase().includes(inputValue.toLowerCase())
+    )
+    .map((option) => ({
+      value: option.value,
+      label: `${option.value} (${option.count})`,
+    }));
+
+  return filteredOptions;
+};
+
+// Helper function to convert array to select options
+const getSelectOptions = (values, allOptions) => {
+  if (!values || !Array.isArray(values)) return [];
+  return values.map(value => {
+    const option = allOptions?.find(opt => opt.value === value);
+    return option ? { value: option.value, label: `${option.value} (${option.count})` } : { value, label: value };
+  });
+};
+
+// Helper function to convert select options to array of values
+const getSelectedValues = (selectedOptions) => {
+  if (!selectedOptions || !Array.isArray(selectedOptions)) return [];
+  return selectedOptions.map(opt => opt.value);
 };
 
 const CandidateCard = ({ candidate, onViewProfile }) => {
@@ -138,8 +159,6 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
 
   const isFresher = candidate.experience_level === 'Fresher';
   const experience = `${candidate.experience_years || 0} yrs ${candidate.experience_months || 0} mos`;
-
-  const colorClass = getRandomColor(candidate.id || candidate.full_name);
 
   return (
     <>
@@ -437,6 +456,12 @@ const CandidateList = () => {
 
   const [filters, setFilters] = useState(() => {
     const params = Object.fromEntries(searchParams);
+    // Parse array values from URL parameters
+    const parseArrayParam = (param) => {
+      if (!param) return [];
+      return Array.isArray(param) ? param : param.split(',');
+    };
+
     return {
       has_resume: false,
       number_revealed: params.number_revealed || '',
@@ -446,14 +471,14 @@ const CandidateList = () => {
       min_age: '',
       max_age: '',
       gender: '',
-      degree: params.education || '',
-      specialization: '',
-      language: '',
+      degree: parseArrayParam(params.education),
+      specialization: parseArrayParam(params.specialization),
+      language: parseArrayParam(params.language),
       department: '',
-      city: params.locations || '',
+      city: parseArrayParam(params.locations),
       english_fluency: '',
-      experience_type: params.experienceType === 'any' ? [] : [params.experienceType] || [],
-      shift_preference: [],
+      experience_type: params.experienceType === 'any' ? [] : parseArrayParam(params.experienceType),
+      shift_preference: parseArrayParam(params.shift_preference),
       min_experience: params.minExperience ? parseInt(params.minExperience, 10) : '',
       max_experience: params.maxExperience ? parseInt(params.maxExperience, 10) : '',
       min_salary: params.minSalary ? parseInt(params.minSalary, 10) : '',
@@ -496,8 +521,13 @@ const CandidateList = () => {
         per_page: perPage,
         has_resume: filters.has_resume ? '1' : '0',
         ...(filters.experience_type.length > 0 && { experience_type: filters.experience_type.join(',') }),
-        ...(filters.shift_preference.length > 0 && { shift_preference: filters.shift_preference }),
+        ...(filters.shift_preference.length > 0 && { shift_preference: filters.shift_preference.join(',') }),
+        ...(filters.degree.length > 0 && { degree: filters.degree.join(',') }),
+        ...(filters.specialization.length > 0 && { specialization: filters.specialization.join(',') }),
+        ...(filters.language.length > 0 && { language: filters.language.join(',') }),
+        ...(filters.city.length > 0 && { city: filters.city.join(',') }),
       }).toString();
+      
       console.log('queryParams:', queryParams);
       const response = await axios.get(`${baseurl}/filter?${queryParams}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('employerToken')}` }
@@ -534,6 +564,14 @@ const CandidateList = () => {
     }
   };
 
+  const handleSelectChange = (selectedOptions, field) => {
+    const { name } = field;
+    setFilters((prev) => ({
+      ...prev,
+      [name]: getSelectedValues(selectedOptions)
+    }));
+  };
+
   const revealNumber = (candidateId) => {
     axios.post(`${baseurl}/reveal-number`, { candidate_id: candidateId }, {
       headers: { Authorization: `Bearer ${localStorage.getItem('employerToken')}` }
@@ -558,18 +596,23 @@ const CandidateList = () => {
         return value !== '' && value !== false && value !== null;
       })
     );
+    
     const urlParams = {
       keywords: cleanedFilters.must_have_keywords || '',
-      locations: cleanedFilters.city || '',
+      locations: cleanedFilters.city?.join(',') || '',
       minExperience: cleanedFilters.min_experience || '',
       maxExperience: cleanedFilters.max_experience || '',
       minSalary: cleanedFilters.min_salary || '',
       maxSalary: cleanedFilters.max_salary || '',
-      education: cleanedFilters.degree || '',
+      education: cleanedFilters.degree?.join(',') || '',
+      specialization: cleanedFilters.specialization?.join(',') || '',
+      language: cleanedFilters.language?.join(',') || '',
       active: cleanedFilters.active || '',
       experienceType: cleanedFilters.experience_type?.length > 0 ? cleanedFilters.experience_type.join(',') : 'any',
       numberRevealed: cleanedFilters.number_revealed || '',
+      shift_preference: cleanedFilters.shift_preference?.join(',') || '',
     };
+    
     const query = new URLSearchParams(urlParams).toString();
     router.push(`/employer/candidate-data?${query}`, { scroll: false });
     fetchCandidates(1, pagination.per_page);
@@ -601,6 +644,7 @@ const CandidateList = () => {
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 flex items-center">
                 <FaUser className="mr-2 text-[#02325a]" /> Filter Candidates
               </h2>
+
               <form className="space-y-6" onSubmit={handleFilterSubmit}>
                 <div>
                   <label className="flex items-center text-sm font-medium text-gray-700">
@@ -727,60 +771,74 @@ const CandidateList = () => {
                     <option value="Other">Other</option>
                   </select>
                 </div>
+
+                {/* Degree Multi-Select */}
                 <div>
                   <label className="text-sm font-medium text-gray-700 flex items-center">
-                    <FaGraduationCap className="mr-2 text-[#02325a]" /> Degree
+                    <FaGraduationCap className="mr-2 text-[#02325a]" /> Degrees
                   </label>
-                  <select
+                  <AsyncCreatableSelect
                     name="degree"
-                    value={filters?.degree}
-                    onChange={handleFilterChange}
-                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
-                  >
-                    <option value="">Select Degree</option>
-                    {filterOptions?.degrees?.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.value} ({option.count})
-                      </option>
-                    ))}
-                  </select>
+                    cacheOptions
+                    defaultOptions={filterOptions?.degrees?.map(option => ({
+                      value: option.value,
+                      label: `${option.value} (${option.count})`,
+                    }))}
+                    loadOptions={(inputValue) => loadOptions(inputValue, 'degree', filterOptions)}
+                    onChange={(options) => handleSelectChange(options, { name: 'degree' })}
+                    value={getSelectOptions(filters.degree, filterOptions?.degrees)}
+                    placeholder="Select or type Degrees..."
+                    className="mt-1"
+                    isClearable
+                    isMulti
+                  />
                 </div>
+
+                {/* Specialization Multi-Select */}
                 <div>
                   <label className="text-sm font-medium text-gray-700 flex items-center">
-                    <FaGraduationCap className="mr-2 text-[#02325a]" /> Specialization
+                    <FaGraduationCap className="mr-2 text-[#02325a]" /> Specializations
                   </label>
-                  <select
+                  <AsyncCreatableSelect
                     name="specialization"
-                    value={filters?.specialization}
-                    onChange={handleFilterChange}
-                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
-                  >
-                    <option value="">Select Specialization</option>
-                    {filterOptions?.specializations?.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.value} ({option.count})
-                      </option>
-                    ))}
-                  </select>
+                    cacheOptions
+                    defaultOptions={filterOptions?.specializations?.map(option => ({
+                      value: option.value,
+                      label: `${option.value} (${option.count})`,
+                    }))}
+                    loadOptions={(inputValue) => loadOptions(inputValue, 'specialization', filterOptions)}
+                    onChange={(options) => handleSelectChange(options, { name: 'specialization' })}
+                    value={getSelectOptions(filters.specialization, filterOptions?.specializations)}
+                    placeholder="Select or type Specializations..."
+                    className="mt-1"
+                    isClearable
+                    isMulti
+                  />
                 </div>
+
+                {/* Language Multi-Select */}
                 <div>
                   <label className="text-sm font-medium text-gray-700 flex items-center">
-                    <FaLanguage className="mr-2 text-[#02325a]" /> Language
+                    <FaLanguage className="mr-2 text-[#02325a]" /> Languages
                   </label>
-                  <select
+                  <AsyncCreatableSelect
                     name="language"
-                    value={filters?.language}
-                    onChange={handleFilterChange}
-                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
-                  >
-                    <option value="">Select Language</option>
-                    {filterOptions?.languages?.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.value} ({option.count})
-                      </option>
-                    ))}
-                  </select>
+                    cacheOptions
+                    defaultOptions={filterOptions?.languages?.map(option => ({
+                      value: option.value,
+                      label: `${option.value} (${option.count})`,
+                    }))}
+                    loadOptions={(inputValue) => loadOptions(inputValue, 'language', filterOptions)}
+                    onChange={(options) => handleSelectChange(options, { name: 'language' })}
+                    value={getSelectOptions(filters.language, filterOptions?.languages)}
+                    placeholder="Select or type Languages..."
+                    className="mt-1"
+                    isClearable
+                    isMulti
+                  />
                 </div>
+
+                {/* Department Single Select */}
                 <div>
                   <label className="text-sm font-medium text-gray-700 flex items-center">
                     <FaBriefcase className="mr-2 text-[#02325a]" /> Department
@@ -799,54 +857,44 @@ const CandidateList = () => {
                     ))}
                   </select>
                 </div>
+
+                {/* City Multi-Select */}
                 <div>
                   <label className="text-sm font-medium text-gray-700 flex items-center">
-                    <FaCity className="mr-2 text-[#02325a]" /> Current City
+                    <FaCity className="mr-2 text-[#02325a]" /> Cities
                   </label>
-                  <select
+                  <AsyncCreatableSelect
                     name="city"
-                    value={filters?.city}
-                    onChange={handleFilterChange}
-                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
-                  >
-                    <option value="">Select City</option>
-                    {filterOptions?.cities?.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.value} ({option.count})
-                      </option>
-                    ))}
-                  </select>
+                    cacheOptions
+                    defaultOptions={filterOptions?.cities?.map(option => ({
+                      value: option.value,
+                      label: `${option.value} (${option.count})`,
+                    }))}
+                    loadOptions={(inputValue) => loadOptions(inputValue, 'city', filterOptions)}
+                    onChange={(options) => handleSelectChange(options, { name: 'city' })}
+                    value={getSelectOptions(filters.city, filterOptions?.cities)}
+                    placeholder="Select or type Cities..."
+                    className="mt-1"
+                    isClearable
+                    isMulti
+                  />
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 flex items-center">
-                    <FaBriefcase className="mr-2 text-[#02325a]" /> Employment Type
-                  </label>
-                  <div className="space-y-2">
-                    {filterOptions?.employment_types?.map((option) => (
-                      <label key={option.value} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="experience_type"
-                          value={option.value}
-                          checked={filters?.experience_type?.includes(option.value)}
-                          onChange={handleFilterChange}
-                          className="h-5 w-5 text-[#02325a] focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                        <span className="ml-2 text-sm text-gray-700 flex items-center">
-                          {option.value} ({option.count})
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+
+                {/* Shift Preference Single Select */}
                 <div>
                   <label className="text-sm font-medium text-gray-700 flex items-center">
                     <FaClock className="mr-2 text-[#02325a]" /> Shift Preference
                   </label>
                   <select
                     name="shift_preference"
-                    value={filters?.shift_preference}
-                    onChange={handleFilterChange}
+                    value={filters.shift_preference?.[0] || ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setFilters(prev => ({
+                        ...prev,
+                        shift_preference: value ? [value] : []
+                      }));
+                    }}
                     className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
                   >
                     <option value="">Select Shift Preference</option>
@@ -857,6 +905,14 @@ const CandidateList = () => {
                     ))}
                   </select>
                 </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  className="w-full bg-[#02325a] text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition duration-300"
+                >
+                  Apply Filters
+                </button>
               </form>
             </div>
           </div>
@@ -870,7 +926,7 @@ const CandidateList = () => {
                   onClick={handleBack}
                   className="py-2 px-4 bg-gray-600 text-white rounded-lg text-sm sm:text-base hover:bg-gray-700 transition-colors"
                 >
-                  Modify Serach
+                  Modify Search
                 </button>
               </div>
               {!loading && candidates.length > 0 && (

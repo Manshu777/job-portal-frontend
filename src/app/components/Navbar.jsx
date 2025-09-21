@@ -27,7 +27,7 @@ export default function Navbar() {
   const [error, setError] = useState("");
   const [useOtpLogin, setUseOtpLogin] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userType, setUserType] = useState(null); // New state to track user type
+  const [userType, setUserType] = useState(null);
   const router = useRouter();
   const pathname = usePathname();
   const [usercred, setusercred] = useState();
@@ -42,7 +42,7 @@ export default function Navbar() {
         setIsLoggedIn(false);
         setUserType(null);
         if (pathname !== "/") {
-          // router.push("/"); // Uncomment if navigation is needed
+          // router.push("/");
         }
         return;
       }
@@ -74,7 +74,7 @@ export default function Navbar() {
           // localStorage.removeItem("employerToken");
           // localStorage.removeItem("port_tok");
           if (pathname !== "/") {
-            // router.push("/"); // Uncomment if navigation is needed
+            // router.push("/");
           }
         }
       } catch (err) {
@@ -84,7 +84,7 @@ export default function Navbar() {
         // localStorage.removeItem("employerToken");
         // localStorage.removeItem("port_tok");
         if (pathname !== "/") {
-          // router.push("/"); // Uncomment if navigation is needed
+          // router.push("/");
         }
       }
     };
@@ -92,7 +92,6 @@ export default function Navbar() {
     checkLogin();
   }, [router, pathname]);
 
-  // Handle OTP sending
   const handleOtp = async () => {
     setLoading(true);
     setError("");
@@ -118,7 +117,6 @@ export default function Navbar() {
     setLoading(false);
   };
 
-  // Handle OTP verification
   const handleSendOtp = async () => {
     setLoading(true);
     setError("");
@@ -185,7 +183,6 @@ export default function Navbar() {
     setLoading(false);
   };
 
-  // Handle Employer password login
   const handleEmployerLogin = async () => {
     setLoading(true);
     setError("");
@@ -217,7 +214,6 @@ export default function Navbar() {
     setLoading(false);
   };
 
-  // Handle Candidate password login
   const handleCandidateLogin = async () => {
     setLoading(true);
     setError("");
@@ -252,7 +248,6 @@ export default function Navbar() {
     setLoading(false);
   };
 
-  // Handle logout
   const handleLogout = () => {
     localStorage.removeItem("employerToken");
     localStorage.removeItem("port_tok");
@@ -263,7 +258,7 @@ export default function Navbar() {
 
   const handleCreditsClick = () => {
     setShowCredits(!showCredits);
-    setTimeout(() => setShowCredits(false), 3000); // Auto-hide after 3 seconds
+    setTimeout(() => setShowCredits(false), 3000);
   };
 
   const handleCloseTooltip = () => {
@@ -272,7 +267,6 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Navbar */}
       <nav className="bg-white p-4 shadow-md sticky top-0 z-50 px-[8%]">
         <div className="mx-auto flex justify-between items-center">
           <div className="text-black text-2xl font-bold">
@@ -326,6 +320,16 @@ export default function Navbar() {
               </>
             ) : (
               <div className="flex items-center gap-4">
+                {userType === "Candidate" && (
+                  <>
+                    <Link href="/job" className="text-black hover:text-gray-600">
+                      All Jobs
+                    </Link>
+                    <Link href="/resume-builder" className="text-black hover:text-gray-600">
+                      Resume Builder
+                    </Link>
+                  </>
+                )}
                 {userType === "Employer" && (
                   <div className="relative">
                     <button
@@ -337,17 +341,13 @@ export default function Navbar() {
                     </button>
                     {showCredits && (
                       <div className="absolute right-0 mt-3 w-72 bg-gradient-to-br from-white via-gray-50 to-gray-100 text-black rounded-2xl shadow-2xl p-6 border border-gray-200 animate-[fadeIn_0.3s_ease-in-out]">
-                        {/* Header */}
                         <div className="flex items-center gap-3 mb-4">
                           <FaCoins className="text-4xl text-yellow-500 " />
                           <h3 className="text-xl font-bold text-gray-800">
                             Your Credits
                           </h3>
                         </div>
-
-                        {/* Credits section */}
                         <div className="grid grid-cols-2 gap-4">
-                          {/* Job Post Credits */}
                           <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex flex-col items-center shadow-sm hover:shadow-md transition">
                             <span className="text-2xl font-bold text-green-600">
                               {usercred?.job_post_credits ?? 0}
@@ -356,8 +356,6 @@ export default function Navbar() {
                               Job Posts
                             </span>
                           </div>
-
-                          {/* Database Credits */}
                           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col items-center shadow-sm hover:shadow-md transition">
                             <span className="text-2xl font-bold text-blue-600">
                               {usercred?.database_credits ?? 0}
@@ -367,9 +365,6 @@ export default function Navbar() {
                             </span>
                           </div>
                         </div>
-
-     
-                       
                       </div>
                     )}
                   </div>
@@ -384,7 +379,6 @@ export default function Navbar() {
                 >
                   <FaUserCircle className="text-2xl text-[#00223f] hover:text-[#004080] transition-colors duration-200" />
                 </Link>
-
                 <button
                   onClick={handleLogout}
                   className="text-white bg-red-500 px-4 py-2 rounded-lg hover:bg-red-600 transition-all duration-200 shadow-sm hover:shadow-md"
@@ -395,7 +389,6 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Toggle */}
           <div className="md:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
@@ -423,7 +416,6 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
         {isOpen && (
           <div className="md:hidden flex flex-col space-y-4 mt-4">
             <Link href="/" className="text-black hover:text-gray-600">
@@ -438,6 +430,16 @@ export default function Navbar() {
             <Link href="/contact" className="text-black hover:text-gray-600">
               Contact
             </Link>
+            {isLoggedIn && userType === "Candidate" && (
+              <>
+                <Link href="/jobs" className="text-black hover:text-gray-600">
+                  All Jobs
+                </Link>
+                <Link href="/resume-builder" className="text-black hover:text-gray-600">
+                  Resume Builder
+                </Link>
+              </>
+            )}
             {!isLoggedIn ? (
               <>
                 <button
@@ -491,7 +493,6 @@ export default function Navbar() {
         )}
       </nav>
 
-      {/* Login Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/20 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full relative transform transition-all duration-300 scale-100">
