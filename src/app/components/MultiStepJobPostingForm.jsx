@@ -1075,9 +1075,7 @@ const fetchSpecializations = useCallback(async (courseName) => {
     if (validateStep(currentStep)) {
       if (currentStep < 5) {
         setCurrentStep((prev) => prev + 1);
-      } else {
-        setShowConfirmation(true);
-      }
+      } 
       // Scroll to the top of the page
       window.scrollTo({
         top: 0,
@@ -2814,89 +2812,128 @@ const renderStepContent = () => {
       case 5:
         return (
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="space-y-8 bg-gray-50 p-6 rounded-lg shadow-lg"
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-8 bg-gray-50 p-6 rounded-lg shadow-lg"
+    >
+      <h2 className="text-2xl font-bold text-gray-800">Job Posting Preview</h2>
+      <div className="space-y-6">
+        {/* Company Details */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Company Details</h3>
+          <div className="mt-4 space-y-2">
+            <p><span className="font-medium text-gray-600">Company Name:</span> {formData.companyName || formData.newCompanyName || "Not specified"}</p>
+            {formData.newCompanyName && formData.panCard && (
+              <p><span className="font-medium text-gray-600">Document:</span> {formData.panCard.name || "Document uploaded"}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Job Details */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Job Details</h3>
+          <div className="mt-4 space-y-2">
+            <p><span className="font-medium text-gray-600">Job Title:</span> {formData.jobTitle || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Job Role:</span> {formData.jobRole || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Job Type:</span> {formData.jobType || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">City:</span> {formData.selectedCity?.name || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Areas:</span> {formData.locations.length > 0 ? formData.locations.map(loc => loc.area_name).join(", ") : "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Pay Type:</span> {formData.payType || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Salary Range:</span> {formData.minSalary ? `₹${formatINR(formData.minSalary)}` : "Not specified"} {formData.maxSalary ? `- ₹${formatINR(formData.maxSalary)}` : ""}</p>
+            {formData.payType === "Salary + Incentive" && (
+              <p><span className="font-medium text-gray-600">Incentive Up To:</span> {formData.incentive ? `₹${formatINR(formData.incentive)}` : "Not specified"}</p>
+            )}
+            <p><span className="font-medium text-gray-600">Joining Fee Required:</span> {formData.joiningFeeRequired || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Number of Vacancies:</span> {formData.numberOfCandidatesRequired || "Not specified"}</p>
+          </div>
+        </div>
+
+        {/* Candidate Requirements */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Candidate Requirements</h3>
+          <div className="mt-4 space-y-2">
+            <p><span className="font-medium text-gray-600">Education Level:</span> {formData.educationLevel || "Not specified"}</p>
+            {formData.course && <p><span className="font-medium text-gray-600">Course:</span> {formData.course}</p>}
+            {formData.specialization && <p><span className="font-medium text-gray-600">Specialization:</span> {formData.specialization}</p>}
+            <p><span className="font-medium text-gray-600">English Level:</span> {formData.englishLevel || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Experience Required:</span> {formData.totalExperienceRequired || "Not specified"}</p>
+            {formData.totalExperienceRequired === "Experienced" && (
+              <>
+                <p><span className="font-medium text-gray-600">Minimum Experience:</span> {formData.experienceLevel ? `${formData.experienceLevel} years` : "Not specified"}</p>
+                <p><span className="font-medium text-gray-600">Maximum Experience:</span> {formData.experienceMax ? `${formData.experienceMax} years` : "Not specified"}</p>
+              </>
+            )}
+            <p><span className="font-medium text-gray-600">Gender Preference:</span> {formData.genderPreference || "Not specified"}</p>
+          </div>
+        </div>
+
+        {/* Job Description and Skills */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Job Description and Skills</h3>
+          <div className="mt-4 space-y-2">
+            <p><span className="font-medium text-gray-600">Job Overview:</span></p>
+            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: formData.jobOverview || "Not specified" }} />
+            <p><span className="font-medium text-gray-600">Required Skills:</span> {formData?.requiredSkills?.length > 0 ? formData.requiredSkills.join(", ") : "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Optional Perks:</span> {formData?.perks?.length > 0 ? formData?.perks?.join(", ") : "None"}</p>
+          </div>
+        </div>
+
+        {/* Interview Details */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Interview Details</h3>
+          <div className="mt-4 space-y-2">
+            <p><span className="font-medium text-gray-600">Interview Mode:</span> {formData.interviewMode || "Not specified"}</p>
+            {formData.interviewMode !== "Online" && (
+              <p><span className="font-medium text-gray-600">Interview Location:</span> {formData.interviewLocation || "Not specified"}</p>
+            )}
+            <p><span className="font-medium text-gray-600">Contact Preference:</span> {formData.contactPreference || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Contact Email:</span> {formData.contactEmail || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Contact Phone:</span> {formData.contactPhone || "Not specified"}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Submit Button in Step 5 */}
+      <div className="mt-8 pt-6 border-t border-gray-200">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+          <motion.button
+            type="button"
+            onClick={handleBack}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center justify-center px-6 py-3 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-300"
           >
-            <h2 className="text-2xl font-bold text-gray-800">Job Posting Preview</h2>
-            <div className="space-y-6">
-              {/* Company Details */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Company Details</h3>
-                <div className="mt-4 space-y-2">
-                  <p><span className="font-medium text-gray-600">Company Name:</span> {formData.companyName || formData.newCompanyName || "Not specified"}</p>
-                  {formData.newCompanyName && formData.panCard && (
-                    <p><span className="font-medium text-gray-600">Document:</span> {formData.panCard.name || "Document uploaded"}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Job Details */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Job Details</h3>
-                <div className="mt-4 space-y-2">
-                  <p><span className="font-medium text-gray-600">Job Title:</span> {formData.jobTitle || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Job Role:</span> {formData.jobRole || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Job Type:</span> {formData.jobType || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">City:</span> {formData.selectedCity?.name || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Areas:</span> {formData.locations.length > 0 ? formData.locations.map(loc => loc.area_name).join(", ") : "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Pay Type:</span> {formData.payType || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Salary Range:</span> {formData.minSalary ? `₹${formatINR(formData.minSalary)}` : "Not specified"} {formData.maxSalary ? `- ₹${formatINR(formData.maxSalary)}` : ""}</p>
-                  {formData.payType === "Salary + Incentive" && (
-                    <p><span className="font-medium text-gray-600">Incentive Up To:</span> {formData.incentive ? `₹${formatINR(formData.incentive)}` : "Not specified"}</p>
-                  )}
-                  <p><span className="font-medium text-gray-600">Joining Fee Required:</span> {formData.joiningFeeRequired || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Number of Vacancies:</span> {formData.numberOfCandidatesRequired || "Not specified"}</p>
-                </div>
-              </div>
-
-              {/* Candidate Requirements */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Candidate Requirements</h3>
-                <div className="mt-4 space-y-2">
-                  <p><span className="font-medium text-gray-600">Education Level:</span> {formData.educationLevel || "Not specified"}</p>
-                  {formData.course && <p><span className="font-medium text-gray-600">Course:</span> {formData.course}</p>}
-                  {formData.specialization && <p><span className="font-medium text-gray-600">Specialization:</span> {formData.specialization}</p>}
-                  <p><span className="font-medium text-gray-600">English Level:</span> {formData.englishLevel || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Experience Required:</span> {formData.totalExperienceRequired || "Not specified"}</p>
-                  {formData.totalExperienceRequired === "Experienced" && (
-                    <>
-                      <p><span className="font-medium text-gray-600">Minimum Experience:</span> {formData.experienceLevel ? `${formData.experienceLevel} years` : "Not specified"}</p>
-                      <p><span className="font-medium text-gray-600">Maximum Experience:</span> {formData.experienceMax ? `${formData.experienceMax} years` : "Not specified"}</p>
-                    </>
-                  )}
-                  <p><span className="font-medium text-gray-600">Gender Preference:</span> {formData.genderPreference || "Not specified"}</p>
-                </div>
-              </div>
-
-              {/* Job Description and Skills */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Job Description and Skills</h3>
-                <div className="mt-4 space-y-2">
-                  <p><span className="font-medium text-gray-600">Job Overview:</span></p>
-                  <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: formData.jobOverview || "Not specified" }} />
-                  <p><span className="font-medium text-gray-600">Required Skills:</span> {formData?.requiredSkills?.length > 0 ? formData.requiredSkills.join(", ") : "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Optional Perks:</span> {formData?.perks?.length > 0 ? formData?.perks?.join(", ") : "None"}</p>
-                </div>
-              </div>
-
-              {/* Interview Details */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Interview Details</h3>
-                <div className="mt-4 space-y-2">
-                  <p><span className="font-medium text-gray-600">Interview Mode:</span> {formData.interviewMode || "Not specified"}</p>
-                  {formData.interviewMode !== "Online" && (
-                    <p><span className="font-medium text-gray-600">Interview Location:</span> {formData.interviewLocation || "Not specified"}</p>
-                  )}
-                  <p><span className="font-medium text-gray-600">Contact Preference:</span> {formData.contactPreference || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Contact Email:</span> {formData.contactEmail || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Contact Phone:</span> {formData.contactPhone || "Not specified"}</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+            <FaChevronLeft className="mr-2" />
+            Back to Edit
+          </motion.button>
+          <motion.button
+            type="submit"
+            disabled={isSubmitting}
+            whileHover={{ scale: isSubmitting ? 1 : 1.05 }}
+            whileTap={{ scale: isSubmitting ? 1 : 0.95 }}
+            className={`flex items-center justify-center px-8 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+              isSubmitting
+                ? "bg-gray-400 text-white cursor-not-allowed"
+                : "bg-gradient-to-r from-[#02325a] to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl"
+            }`}
+          >
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Submitting...
+              </>
+            ) : (
+              <>
+                <FaCheck className="mr-2" />
+                Submit Job Posting
+              </>
+            )}
+          </motion.button>
+        </div>
+      </div>
+    </motion.div>
         );
       default:
         return null;
