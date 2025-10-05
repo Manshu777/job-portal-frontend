@@ -286,7 +286,7 @@ const CandidateList = () => {
   return (
 
 
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 ">
       <div className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 overflow-auto">
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 max-w-7xl mx-auto w-full">
           {/* Filter Column */}

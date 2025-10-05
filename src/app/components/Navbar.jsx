@@ -272,7 +272,7 @@ export default function Navbar() {
           <div className="text-black text-2xl font-bold">
             <Link
               className={`flex items-center ${isLoggedIn ? "" : " "} `}
-              href="/"
+              href={`${isLoggedIn ? (userType === "Employer" ? "/employer/dashboard" : "/candidate/dashboard") : "/"  }`}
             >
               <img className="h-[80px]" src="/img/logo-rm-boat.png" />
               <span className="text-2xl ml-2 uppercase leading-1">

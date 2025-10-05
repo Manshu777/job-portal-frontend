@@ -339,7 +339,7 @@ const [isSidebarOpen, setIsSidebarOpen] = useState(false);
         recentSearchesContent={recentSearchesContent}
       />
       <div className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 overflow-auto">
-        <div className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto w-full">
+        <div className="flex flex-col lg:flex-row gap-6 max-w-5xl mx-auto w-full">
           <div className="flex-1">
             <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
               <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6 sm:mb-8 text-center">

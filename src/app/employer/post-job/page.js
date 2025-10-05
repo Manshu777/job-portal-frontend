@@ -58,7 +58,7 @@ const Page = () => {
     <>
       {/* <Sidebar /> */}
      <div className='relative h-auto'>
-       <div className="bg-gray-100 p-4 md:p-8 lg:p-12 xl:p-16">
+       <div className="bg-gradient-to-br from-blue-50 to-gray-100 p-4 md:p-8 lg:p-12 xl:p-16">
         <MultiStepJobPostingForm companies={companies} userdata={userdata} />
       </div>
      </div>

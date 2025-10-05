@@ -331,7 +331,7 @@ const EmployerDashboard = () => {
   }
 
   return (
-    <div className="flex bg-gray-100">
+    <div className="flex  bg-gradient-to-br from-blue-50 to-gray-100">
       <Sidebar
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
@@ -629,7 +629,7 @@ const NewJobCard = ({ job, setJobs }) => {
                   </button>
                 )}
               </MenuItem>
-              <MenuItem>
+              {/* <MenuItem>
                 {({ active }) => (
                   <button
                     onClick={handleEditJob}
@@ -640,7 +640,7 @@ const NewJobCard = ({ job, setJobs }) => {
                     Edit Job
                   </button>
                 )}
-              </MenuItem>
+              </MenuItem> */}
               <MenuItem>
                 {({ active }) => (
                   <button
