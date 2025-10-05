@@ -25,6 +25,8 @@ import {
   FaRegStar,
   FaStar,
   FaTimes,
+  FaImage,
+  FaFilePdf,
 } from "react-icons/fa";
 import { IoIosDocument } from "react-icons/io";
 import { FiSettings, FiEdit2, FiSave, FiX } from "react-icons/fi";
@@ -56,18 +58,56 @@ const Dashboard = () => {
     preferred_language: "",
     skills: [],
     password: "",
+    profile_pic: "",
+    resume: "",
   });
-  const [tempData, setTempData] = useState(userData); // Initialize with userData
+  const [tempData, setTempData] = useState(userData);
+  const [profilePicFile, setProfilePicFile] = useState(null);
+  const [resumeFile, setResumeFile] = useState(null);
+  const [profilePicPreview, setProfilePicPreview] = useState("");
+  const [fileErrors, setFileErrors] = useState({ profilePic: "", resume: "" });
   const [ViewModel, setViewModel] = useState(false);
   const [CvBuilder, setCvBuilder] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("profile");
   const [editMode, setEditMode] = useState(false);
   const [newSkill, setNewSkill] = useState("");
-  const [newJobRole, setNewJobRole] = useState(""); // Added for job_roles input
-  const [error, setError] = useState(""); // Added for error handling
+  const [newJobRole, setNewJobRole] = useState("");
+  const [error, setError] = useState("");
 
-  const storageLink = 'http://147.93.18.63:8000/storage'
+  const storageLink = 'http://147.93.18.63:8001/storage';
+
+  // File validation constraints
+  const MAX_PROFILE_PIC_SIZE = 2 * 1024 * 1024; // 2MB
+  const MAX_RESUME_SIZE = 5 * 1024 * 1024; // 5MB
+  const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
+  const ALLOWED_RESUME_TYPES = ['application/pdf'];
+
+  const validateFile = (file, type) => {
+    if (!file) return true;
+
+    if (type === 'profilePic') {
+      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        setFileErrors(prev => ({ ...prev, profilePic: "Only JPG, JPEG, or PNG files are allowed" }));
+        return false;
+      }
+      if (file.size > MAX_PROFILE_PIC_SIZE) {
+        setFileErrors(prev => ({ ...prev, profilePic: "Profile picture must be less than 2MB" }));
+        return false;
+      }
+    } else if (type === 'resume') {
+      if (!ALLOWED_RESUME_TYPES.includes(file.type)) {
+        setFileErrors(prev => ({ ...prev, resume: "Only PDF files are allowed" }));
+        return false;
+      }
+      if (file.size > MAX_RESUME_SIZE) {
+        setFileErrors(prev => ({ ...prev, resume: "Resume must be less than 5MB" }));
+        return false;
+      }
+    }
+    return true;
+  };
+
   const fetchData = async (token) => {
     if (!token) {
       router.push("/");
@@ -79,8 +119,19 @@ const Dashboard = () => {
             Authorization: `Bearer ${token}`,
           },
         });
-        setUserData(response.data);
-        setTempData(response.data);
+        const data = {
+          ...response.data,
+          job_roles: typeof response.data.job_roles === 'string'
+            ? JSON.parse(response.data.job_roles || '[]')
+            : response.data.job_roles || [],
+          skills: typeof response.data.skills === 'string'
+            ? JSON.parse(response.data.skills || '[]')
+            : response.data.skills || [],
+        };
+
+        console.log("Fetched user data:", data);
+        setUserData(data);
+        setTempData(data);
       } catch (error) {
         console.error("Error fetching data:", error);
         setError("Failed to load profile data. Please try again.");
@@ -94,6 +145,29 @@ const Dashboard = () => {
     const token = localStorage.getItem("port_tok");
     fetchData(token);
   }, []);
+
+  useEffect(() => {
+    if (profilePicFile) {
+      if (validateFile(profilePicFile, 'profilePic')) {
+        const objectUrl = URL.createObjectURL(profilePicFile);
+        setProfilePicPreview(objectUrl);
+        setFileErrors(prev => ({ ...prev, profilePic: "" }));
+        return () => URL.revokeObjectURL(objectUrl);
+      } else {
+        setProfilePicFile(null);
+        setProfilePicPreview("");
+      }
+    }
+  }, [profilePicFile]);
+
+  useEffect(() => {
+    if (resumeFile && !validateFile(resumeFile, 'resume')) {
+      setResumeFile(null);
+      setFileErrors(prev => ({ ...prev, resume: fileErrors.resume }));
+    } else {
+      setFileErrors(prev => ({ ...prev, resume: "" }));
+    }
+  }, [resumeFile]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -120,39 +194,70 @@ const Dashboard = () => {
     setTempData({ ...tempData, skills: updatedSkills });
   };
 
-  // const addJobRole = () => {
-  //   if (newJobRole.trim() && tempData.job_roles.length < 10) {
-  //     setTempData({
-  //       ...tempData,
-  //       job_roles: [...tempData.job_roles, newJobRole.trim()],
-  //     });
-  //     setNewJobRole("");
-  //   }
-  // };
+  const addJobRole = () => {
+    if (newJobRole.trim() && tempData.job_roles.length < 10) {
+      setTempData({
+        ...tempData,
+        job_roles: [...tempData.job_roles, newJobRole.trim()],
+      });
+      setNewJobRole("");
+    }
+  };
+
+  const removeJobRole = (index) => {
+    const updatedJobRoles = [...tempData.job_roles];
+    updatedJobRoles.splice(index, 1);
+    setTempData({ ...tempData, job_roles: updatedJobRoles });
+  };
 
   const saveChanges = async () => {
+    if (fileErrors.profilePic || fileErrors.resume) {
+      setError("Please fix file upload errors before saving.");
+      return;
+    }
+
     try {
       const token = localStorage.getItem("port_tok");
-      // Ensure job_roles and skills are sent as JSON strings
-      const payload = {
-        ...tempData,
+      const formData = new FormData();
 
-        skills: JSON.stringify(tempData.skills),
-      };
+      for (const key in tempData) {
+        if (['skills', 'job_roles'].includes(key)) {
+          formData.append(key, JSON.stringify(tempData[key]));
+        } else if (tempData[key] !== null && tempData[key] !== undefined) {
+          formData.append(key, tempData[key]);
+        }
+      }
+
+      if (profilePicFile) {
+        formData.append('profile_pic', profilePicFile);
+      }
+      if (resumeFile) {
+        formData.append('resume', resumeFile);
+      }
+
       const response = await axios.post(
-        `${baseurl}/updatecandidate/${ton}`,
-        payload
+        `${baseurl}/updatecandidate/${token}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
       if (response.data.success) {
-        setUserData(tempData);
+        fetchData(token);
         setEditMode(false);
         setError("");
+        setProfilePicFile(null);
+        setResumeFile(null);
+        setProfilePicPreview("");
       } else {
         setError(response.data.message || "Failed to update profile.");
       }
     } catch (error) {
       console.error("Error updating data:", error);
-      setError("An error occurred while updating your profile.");
+      setError(error.response?.data?.message || "An error occurred while updating your profile.");
     }
   };
 
@@ -184,11 +289,17 @@ const Dashboard = () => {
               <FiSettings size={20} />
             </button>
             <div className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
-                {userData.full_name
-                  ? userData.full_name.charAt(0).toUpperCase()
-                  : "U"}
-              </div>
+              {userData.profile_pic ? (
+                <img
+                  src={`${storageLink}/${userData.profile_pic}`}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
+                  {userData.full_name ? userData.full_name.charAt(0).toUpperCase() : "U"}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -197,43 +308,50 @@ const Dashboard = () => {
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         {error && (
           <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
-            {}
-
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-              <div>
-                <h2 className="text-2xl font-bold mb-2">
-                  Welcome back, {userData.full_name || "Candidate"}!
-                </h2>
-                <p className="opacity-90">
-                  Here's your complete profile overview
-                </p>
-              </div>
-              {editMode ? (
-                <div className="flex space-x-2 mt-4 md:mt-0">
-                  <button
-                    onClick={saveChanges}
-                    className="bg-white text-[#02325a] hover:bg-blue-50 px-4 py-2 rounded-lg font-medium flex items-center"
-                  >
-                    <FiSave className="mr-2" /> Save Changes
-                  </button>
-                  <button
-                    onClick={() => setEditMode(false)}
-                    className="bg-gray-200 text-gray-700 hover:bg-gray-300 px-4 py-2 rounded-lg font-medium flex items-center"
-                  >
-                    <FiX className="mr-2" /> Cancel
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setEditMode(true)}
-                  className="mt-4 md:mt-0 bg-white text-[#02325a] hover:bg-blue-50 px-4 py-2 rounded-lg font-medium flex items-center"
-                >
-                  <FiEdit2 className="mr-2" /> Edit Profile
-                </button>
-              )}
-            </div>
+            {error}
           </div>
         )}
+
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+          <div>
+            <h2 className="text-2xl font-bold mb-2">
+              Welcome back, {userData.full_name || "Candidate"}!
+            </h2>
+            <p className="opacity-90">
+              Here's your complete profile overview
+            </p>
+          </div>
+          {editMode ? (
+            <div className="flex space-x-2 mt-4 md:mt-0">
+              <button
+                onClick={saveChanges}
+                className="bg-white text-[#02325a] hover:bg-blue-50 px-4 py-2 rounded-lg font-medium flex items-center"
+              >
+                <FiSave className="mr-2" /> Save Changes
+              </button>
+              <button
+                onClick={() => {
+                  setEditMode(false);
+                  setTempData(userData);
+                  setProfilePicFile(null);
+                  setResumeFile(null);
+                  setProfilePicPreview("");
+                  setFileErrors({ profilePic: "", resume: "" });
+                }}
+                className="bg-gray-200 text-gray-700 hover:bg-gray-300 px-4 py-2 rounded-lg font-medium flex items-center"
+              >
+                <FiX className="mr-2" /> Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setEditMode(true)}
+              className="mt-4 md:mt-0 bg-white text-[#02325a] hover:bg-blue-50 px-4 py-2 rounded-lg font-medium flex items-center"
+            >
+              <FiEdit2 className="mr-2" /> Edit Profile
+            </button>
+          )}
+        </div>
 
         <div className="flex border-b border-gray-200 mb-6">
           <button
@@ -259,7 +377,7 @@ const Dashboard = () => {
           <button
             onClick={() => setActiveTab("CV-Builder")}
             className={`px-4 py-2 font-medium text-sm flex items-center ${
-              activeTab === "CV-Builder" // Fixed condition
+              activeTab === "CV-Builder"
                 ? "text-blue-600 border-b-2 border-blue-600"
                 : "text-gray-500 hover:text-gray-700"
             }`}
@@ -276,6 +394,7 @@ const Dashboard = () => {
                 icon={<FaUser className="text-blue-500" />}
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {console.log("userData",userData)}
                   <EditableField
                     editMode={editMode}
                     icon={<FaUser />}
@@ -311,6 +430,48 @@ const Dashboard = () => {
                     value={editMode ? tempData.number : userData.number}
                     onChange={handleInputChange}
                   />
+                  <div className="col-span-2">
+                    <div className="flex items-center mb-1">
+                      <FaImage className="text-gray-500 mr-2" />
+                      <span className="text-sm font-medium text-gray-500">Profile Picture</span>
+                    </div>
+                    {editMode ? (
+                      <div>
+                        {profilePicPreview || userData.profile_pic ? (
+                          <img
+                            src={profilePicPreview || `${storageLink}/${userData.profile_pic}`}
+                            alt="Profile Preview"
+                            className="w-32 h-32 rounded-full object-cover mb-2"
+                          />
+                        ) : (
+                          <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center mb-2">
+                            No Image
+                          </div>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png"
+                          onChange={(e) => setProfilePicFile(e.target.files[0])}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        />
+                        {fileErrors.profilePic && (
+                          <p className="text-red-500 text-sm mt-1">{fileErrors.profilePic}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        {userData.profile_pic ? (
+                          <img
+                            src={`${storageLink}/${userData.profile_pic}`}
+                            alt="Profile"
+                            className="w-32 h-32 rounded-full object-cover"
+                          />
+                        ) : (
+                          <p className="text-gray-800 font-semibold">Not provided</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </DashboardCard>
 
@@ -435,7 +596,7 @@ const Dashboard = () => {
                           </button>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          {/* {tempData.job_roles.map((role, index) => (
+                          {tempData.job_roles.map((role, index) => (
                             <div
                               key={index}
                               className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full"
@@ -448,12 +609,12 @@ const Dashboard = () => {
                                 <FaTimes size={12} />
                               </button>
                             </div>
-                          ))} */}
+                          ))}
                         </div>
                       </div>
                     ) : (
                       <div className="flex flex-wrap gap-2">
-                        {/* {userData.job_roles.length > 0 ? (
+                        {userData.job_roles.length > 0 ? (
                           userData.job_roles.map((role, index) => (
                             <span
                               key={index}
@@ -466,7 +627,42 @@ const Dashboard = () => {
                           <span className="text-gray-500">
                             No job roles added
                           </span>
-                        )} */}
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="md:col-span-2">
+                    <div className="flex items-center mb-1">
+                      <FaFilePdf className="text-gray-500 mr-2" />
+                      <span className="text-sm font-medium text-gray-500">Resume</span>
+                    </div>
+                    {editMode ? (
+                      <div>
+                        <input
+                          type="file"
+                          accept="application/pdf"
+                          onChange={(e) => setResumeFile(e.target.files[0])}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        />
+                        {fileErrors.resume && (
+                          <p className="text-red-500 text-sm mt-1">{fileErrors.resume}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        {userData.resume ? (
+                          <div className="flex items-center gap-4">
+                            <p className="text-gray-800 font-semibold">{userData.resume}</p>
+                            <button
+                              onClick={() => setViewModel(true)}
+                              className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition"
+                            >
+                              Preview Resume
+                            </button>
+                          </div>
+                        ) : (
+                          <p className="text-gray-800 font-semibold">Not provided</p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -633,7 +829,7 @@ const Dashboard = () => {
                         Skills
                       </span>
                       {editMode && (
-                        <span className="text-xs text-gray-500 ml_INVALID_VALUE_in_value_for_column_candidates_job_roles_at_position_0_in_value_for_column_candidates_job_roles/auto">
+                        <span className="text-xs text-gray-500 ml-auto">
                           {tempData.skills.length}/10
                         </span>
                       )}
@@ -660,7 +856,7 @@ const Dashboard = () => {
                           </button>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          {/* {tempData.skills.map((skill, index) => (
+                          {tempData.skills.map((skill, index) => (
                             <div
                               key={index}
                               className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full"
@@ -673,13 +869,13 @@ const Dashboard = () => {
                                 <FaTimes size={12} />
                               </button>
                             </div>
-                          ))} */}
+                          ))}
                         </div>
                       </div>
                     ) : (
                       <div className="flex flex-wrap gap-2">
-                        {/* {userData.skills.length > 0 ? (
-                          userData.skills.map((才, index) => (
+                        {userData.skills.length > 0 ? (
+                          userData.skills.map((skill, index) => (
                             <span
                               key={index}
                               className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
@@ -689,7 +885,7 @@ const Dashboard = () => {
                           ))
                         ) : (
                           <span className="text-gray-500">No skills added</span>
-                        )} */}
+                        )}
                       </div>
                     )}
                   </div>
@@ -741,7 +937,6 @@ const Dashboard = () => {
           </div>
         )}
 
-      {  console.log('userData?.resume',userData?.resume)}
         {activeTab === "CV-Builder" && (
           <div className="bg-white rounded-xl shadow-sm p-4">
             {userData?.resume ? (
@@ -892,6 +1087,8 @@ const calculateCompletion = (data) => {
     data?.company_name,
     data?.job_roles?.length > 0,
     data?.skills.length > 0,
+    data?.profile_pic,
+    data?.resume,
   ];
   const filledFields = fields.filter((field) => Boolean(field)).length;
   return Math.round((filledFields / fields.length) * 100);
@@ -917,6 +1114,8 @@ const calculateStrengthScore = (data) => {
   if (data.company_name) score += 15;
   if (data.job_roles.length > 0) score += 15;
   if (data.skills.length > 0) score += 20;
+  if (data.profile_pic) score += 5;
+  if (data.resume) score += 5;
   return Math.min(score, 100);
 };
 

@@ -1,21 +1,36 @@
-'use client';
+"use client";
 
-import { useState, Suspense, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Sidebar from '@/app/components/Sidebar';
+import { useState, Suspense, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Sidebar from "@/app/components/Sidebar";
 import {
   UserIcon,
   BriefcaseIcon,
   CodeBracketIcon,
   MapPinIcon,
   AcademicCapIcon,
-} from '@heroicons/react/24/outline';
-import axios from 'axios';
+} from "@heroicons/react/24/outline";
+import axios from "axios";
 import { BiMedal } from "react-icons/bi";
-import { MdWorkHistory } from 'react-icons/md';
-import { baseurl } from '@/app/components/common';
-import { FaMapMarkerAlt, FaGlobe, FaPhone, FaCoins, FaFileAlt, FaKey, FaBan, FaUser, FaGraduationCap, FaLanguage, FaCity, FaBriefcase, FaClock } from 'react-icons/fa';
-
+import { MdWorkHistory } from "react-icons/md";
+import { baseurl } from "@/app/components/common";
+import {
+  FaMapMarkerAlt,
+  FaGlobe,
+  FaPhone,
+  FaCoins,
+  FaFileAlt,
+  FaKey,
+  FaBan,
+  FaUser,
+  FaGraduationCap,
+  FaLanguage,
+  FaCity,
+  FaBriefcase,
+  FaClock,
+} from "react-icons/fa";
+import AsyncCreatableSelect from "react-select/async-creatable";
+import { FaChevronDown } from "react-icons/fa";
 const ageRange = Array.from({ length: 33 }, (_, i) => 18 + i); // 18 to 50
 
 const ProfileDetails = ({ icon, label, value }) => (
@@ -23,34 +38,51 @@ const ProfileDetails = ({ icon, label, value }) => (
     <div className="text-[#02325a]">{icon}</div>
     <div>
       <p className="text-sm font-medium text-gray-600">{label}</p>
-      <p className="text-gray-800">{value || 'N/A'}</p>
+      <p className="text-gray-800">{value || "N/A"}</p>
     </div>
   </div>
 );
 
-const colors = [
-  'bg-blue-500',
-  'bg-green-500',
-  'bg-red-500',
-  'bg-purple-500',
-  'bg-teal-500',
-  'bg-orange-500',
-  'bg-pink-500',
-  'bg-indigo-500',
-];
+const loadOptions = async (inputValue, field, filterOptions) => {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  const fieldMap = {
+    language: "languages",
+    city: "cities",
+    specialization: "specializations",
+    degree: "degrees",
+  };
 
-const getRandomColor = (seed) => {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % colors.length;
-  return colors[index];
+  const options = filterOptions[fieldMap[field]] || [];
+  const filteredOptions = options
+    .filter((option) =>
+      option.value.toLowerCase().includes(inputValue.toLowerCase())
+    )
+    .map((option) => ({
+      value: option.value,
+      label: `${option.value} (${option.count})`,
+    }));
+
+  return filteredOptions;
+};
+
+const getSelectOptions = (values, allOptions) => {
+  if (!values || !Array.isArray(values)) return [];
+  return values.map((value) => {
+    const option = allOptions?.find((opt) => opt.value === value);
+    return option
+      ? { value: option.value, label: `${option.value} (${option.count})` }
+      : { value, label: value };
+  });
+};
+
+const getSelectedValues = (selectedOptions) => {
+  if (!selectedOptions || !Array.isArray(selectedOptions)) return [];
+  return selectedOptions.map((opt) => opt.value);
 };
 
 const CandidateCard = ({ candidate, onViewProfile }) => {
   const [showPhone, setShowPhone] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState(candidate.number || 'xxxxxxx');
+  const [phoneNumber, setPhoneNumber] = useState(candidate.number || "xxxxxxx");
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -58,11 +90,11 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
     const num = Number(amount);
     if (isNaN(num)) return amount;
     if (num >= 10000000) {
-      return (num / 10000000).toFixed(2).replace(/\.00$/, '') + ' Cr';
+      return (num / 10000000).toFixed(2).replace(/\.00$/, "") + " Cr";
     } else if (num >= 100000) {
-      return (num / 100000).toFixed(2).replace(/\.00$/, '') + ' Lac';
+      return (num / 100000).toFixed(2).replace(/\.00$/, "") + " Lac";
     } else if (num >= 1000) {
-      return (num / 1000).toFixed(2).replace(/\.00$/, '') + 'k';
+      return (num / 1000).toFixed(2).replace(/\.00$/, "") + "k";
     }
     return num.toString();
   }
@@ -78,14 +110,17 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
         `${baseurl}/reveal-number`,
         { candidate_id: candidateId },
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem('employerToken')}` },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("employerToken")}`,
+          },
         }
       );
-      setPhoneNumber(response.data.number || 'N/A');
+      setPhoneNumber(response.data.number || "N/A");
       setShowPhone(true);
       alert(response.data.message);
     } catch (error) {
-      const errorMessage = error.response?.data?.error || 'Error revealing number';
+      const errorMessage =
+        error.response?.data?.error || "Error revealing number";
       alert(errorMessage);
     } finally {
       setIsLoading(false);
@@ -95,7 +130,9 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
   const formatExperience = () => {
     const years = candidate.experience_years || 0;
     const months = candidate.experience_months || 0;
-    return `${years} Year${years !== 1 ? "s" : ""} ${months} Month${months !== 1 ? "s" : ""}`;
+    return `${years} Year${years !== 1 ? "s" : ""} ${months} Month${
+      months !== 1 ? "s" : ""
+    }`;
   };
 
   const skills = candidate.skills
@@ -136,21 +173,25 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
     }
   })();
 
-  const isFresher = candidate.experience_level === 'Fresher';
-  const experience = `${candidate.experience_years || 0} yrs ${candidate.experience_months || 0} mos`;
-
-  const colorClass = getRandomColor(candidate.id || candidate.full_name);
+  const isFresher = candidate.experience_level === "Fresher";
+  const experience = `${candidate.experience_years || 0} yrs ${
+    candidate.experience_months || 0
+  } mos`;
 
   return (
     <>
       <div className="bg-white rounded-lg shadow p-5 border border-gray-200 flex flex-col gap-3 mb-6 max-w-3xl">
         <div className="flex items-center gap-2">
-          <div className={`bg-[#02325a] px-4 py-2 rounded-full text-2xl font-semibold text-white`}>
-            {candidate?.full_name?.charAt(0) || 'N'}
+          <div
+            className={`bg-[#02325a] px-4 py-2 rounded-full text-2xl font-semibold text-white`}
+          >
+            {candidate?.full_name?.charAt(0) || "N"}
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-800">{candidate.full_name}</h3>
-            <div className='flex mt-1 gap-2'>
+            <h3 className="text-lg font-semibold text-gray-800">
+              {candidate.full_name}
+            </h3>
+            <div className="flex mt-1 gap-2">
               {!isFresher && (
                 <>
                   <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
@@ -165,7 +206,9 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
               )}
               {isFresher && (
                 <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
-                  <span className="bg-green-100 text-green-800 rounded-full px-3 py-1">Fresher</span>
+                  <span className="bg-green-100 text-green-800 rounded-full px-3 py-1">
+                    Fresher
+                  </span>
                 </div>
               )}
               <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
@@ -177,39 +220,50 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
         </div>
         <div className="flex items-center justify-items-start flex-col my-4 gap-2">
           {!isFresher && (
-            <div className='flex w-full gap-5 my-1'>
-              <span className='text-xl flex items-center gap-2 text-gray-500'>
-                <FaBriefcase className='text-[20px]' />Current / Latest
+            <div className="flex w-full gap-5 my-1">
+              <span className="text-xl flex items-center gap-2 text-gray-500">
+                <FaBriefcase className="text-[20px]" />
+                Current / Latest
               </span>
               <span className="flex text-xl items-center text-[#02325a] gap-1">
                 {candidate.job_title}, {candidate.company_name}
               </span>
             </div>
           )}
-          <div className='flex w-full gap-5 my-1'>
-            <span className='text-xl flex items-center gap-2 text-gray-500'>
-              <FaMapMarkerAlt className='text-[20px]' />Pref. Location
+          <div className="flex w-full gap-5 my-1">
+            <span className="text-xl flex items-center gap-2 text-gray-500">
+              <FaMapMarkerAlt className="text-[20px]" />
+              Pref. Location
             </span>
             <span className="flex text-xl items-center text-[#02325a] gap-1">
-              {preferredLocations.length > 0 ? preferredLocations.join(', ') : `${candidate.city}, ${candidate.state}`}
+              {preferredLocations.length > 0
+                ? preferredLocations.join(", ")
+                : `${candidate.city}, ${candidate.state}`}
             </span>
           </div>
-          <div className='flex w-full gap-5 my-1'>
-            <span className='text-xl flex items-center gap-2 text-gray-500'>
-              <FaBriefcase className='text-[20px]' />Pref. Job Titles
+          <div className="flex w-full gap-5 my-1">
+            <span className="text-xl flex items-center gap-2 text-gray-500">
+              <FaBriefcase className="text-[20px]" />
+              Pref. Job Titles
             </span>
             <span className="flex text-xl items-center text-[#02325a] gap-1">
-              {preferredJobTitles.length > 0 ? preferredJobTitles.join(', ') : 'Not specified'}
+              {preferredJobTitles.length > 0
+                ? preferredJobTitles.join(", ")
+                : "Not specified"}
             </span>
           </div>
-          <div className='flex w-full gap-5 my-1'>
-            <span className='text-xl flex items-center gap-2 text-gray-500'>
-              <BiMedal className='text-[20px]' />Skills
+          <div className="flex w-full gap-5 my-1">
+            <span className="text-xl flex items-center gap-2 text-gray-500">
+              <BiMedal className="text-[20px]" />
+              Skills
             </span>
             <span className="flex text-xl items-center text-[#02325a] gap-1">
               {candidateSkills && candidateSkills.length > 0 ? (
                 candidateSkills.map((skill, idx) => (
-                  <span key={idx} className="bg-blue-50 text-[#02325a] rounded-full px-3 py-1">
+                  <span
+                    key={idx}
+                    className="bg-blue-50 text-[#02325a] rounded-full px-3 py-1"
+                  >
                     {skill}
                   </span>
                 ))
@@ -218,12 +272,14 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
               )}
             </span>
           </div>
-          <div className='flex w-full gap-5 my-1'>
-            <span className='text-xl flex items-center gap-2 text-gray-500'>
-              <FaGraduationCap className='text-[20px]' />Education
+          <div className="flex w-full gap-5 my-1">
+            <span className="text-xl flex items-center gap-2 text-gray-500">
+              <FaGraduationCap className="text-[20px]" />
+              Education
             </span>
             <span className="flex text-xl items-center text-[#02325a] gap-1">
-              {candidate.degree} in {candidate.specialization}, {candidate.college_name}
+              {candidate.degree} in {candidate.specialization},{" "}
+              {candidate.college_name}
             </span>
           </div>
         </div>
@@ -235,27 +291,31 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
           ) : (
             <button
               className={`bg-[#02325a] text-white py-2 px-4 rounded-lg font-medium flex items-center gap-2 hover:bg-blue-700 transition ${
-                isLoading || showPhone ? 'opacity-50 cursor-not-allowed' : ''
+                isLoading || showPhone ? "opacity-50 cursor-not-allowed" : ""
               }`}
               onClick={() => revealNumber(candidate.id)}
               disabled={isLoading || showPhone}
             >
               <FaPhone />
-              {isLoading ? 'Revealing...' : showPhone ? phoneNumber : 'View Phone Number'}
+              {isLoading
+                ? "Revealing..."
+                : showPhone
+                ? phoneNumber
+                : "View Phone Number"}
             </button>
           )}
           <button
             className="bg-green-600 text-white py-2 px-4 rounded-lg font-medium flex items-center gap-2 hover:bg-green-700 transition"
             onClick={toggleSidebar}
           >
-            <FaUser /> View Full Profile Free 
+            <FaUser /> View Full Profile Free
           </button>
         </div>
       </div>
 
       <div
         className={`fixed top-0 right-0 h-full w-full sm:w-[600px] bg-gradient-to-br from-white to-gray-100 shadow-2xl transform transition-transform duration-500 ease-in-out z-50 ${
-          isSidebarOpen ? 'translate-x-0' : 'translate-x-full'
+          isSidebarOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         <div className="flex justify-between items-center p-6 border-b bg-white/80 backdrop-blur-sm">
@@ -266,8 +326,18 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
             className="text-white bg-[#02325a] hover:bg-blue-700 rounded-full p-2 transition-colors"
             onClick={toggleSidebar}
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -278,14 +348,32 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
                 <FaUser className="text-[#02325a]" /> Personal Information
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <p className="text-sm text-gray-600"><strong>Full Name:</strong> {candidate.full_name}</p>
-                <p className="text-sm text-gray-600"><strong>Email:</strong> {candidate.email}</p>
-                <p className="text-sm text-gray-600"><strong>Phone:</strong> {candidate.number_revealed ? candidate.number : phoneNumber}</p>
-                <p className="text-sm text-gray-600"><strong>Gender:</strong> {candidate.gender}</p>
-                <p className="text-sm text-gray-600"><strong>Date of Birth:</strong> {new Date(candidate.dob).toLocaleDateString()}</p>
-                <p className="text-sm text-gray-600"><strong>Address:</strong> {candidate.address}</p>
-                <p className="text-sm text-gray-600"><strong>City:</strong> {candidate.city}</p>
-                <p className="text-sm text-gray-600"><strong>State:</strong> {candidate.state}</p>
+                <p className="text-sm text-gray-600">
+                  <strong>Full Name:</strong> {candidate.full_name}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Email:</strong> {candidate.email}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Phone:</strong>{" "}
+                  {candidate.number_revealed ? candidate.number : phoneNumber}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Gender:</strong> {candidate.gender}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Date of Birth:</strong>{" "}
+                  {new Date(candidate.dob).toLocaleDateString()}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Address:</strong> {candidate.address}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>City:</strong> {candidate.city}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>State:</strong> {candidate.state}
+                </p>
               </div>
             </div>
 
@@ -294,13 +382,31 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
                 <FaBriefcase className="text-[#02325a]" /> Professional Details
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <p className="text-sm text-gray-600"><strong>Job Title:</strong> {candidate.job_title || 'N/A'}</p>
-                <p className="text-sm text-gray-600"><strong>Company:</strong> {candidate.company_name || 'N/A'}</p>
-                <p className="text-sm text-gray-600"><strong>Experience:</strong> {formatExperience()}</p>
-                <p className="text-sm text-gray-600"><strong>Current Salary:</strong> {formatIndianSalary(candidate.current_salary)}</p>
-                <p className="text-sm text-gray-600"><strong>Employment Type:</strong> {candidate.employment_type || 'N/A'}</p>
-                <p className="text-sm text-gray-600"><strong>Experience Level:</strong> {candidate.experience_level || 'N/A'}</p>
-                <p className="text-sm text-gray-600"><strong>Job Roles:</strong> {jobRoles.length > 0 ? jobRoles.join(', ') : 'None'}</p>
+                <p className="text-sm text-gray-600">
+                  <strong>Job Title:</strong> {candidate.job_title || "N/A"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Company:</strong> {candidate.company_name || "N/A"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Experience:</strong> {formatExperience()}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Current Salary:</strong>{" "}
+                  {formatIndianSalary(candidate.current_salary)}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Employment Type:</strong>{" "}
+                  {candidate.employment_type || "N/A"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Experience Level:</strong>{" "}
+                  {candidate.experience_level || "N/A"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Job Roles:</strong>{" "}
+                  {jobRoles.length > 0 ? jobRoles.join(", ") : "None"}
+                </p>
               </div>
             </div>
 
@@ -309,13 +415,32 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
                 <FaGraduationCap className="text-[#02325a]" /> Education
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <p className="text-sm text-gray-600"><strong>Degree:</strong> {candidate.degree || 'N/A'}</p>
-                <p className="text-sm text-gray-600"><strong>Specialization:</strong> {candidate.specialization || 'N/A'}</p>
-                <p className="text-sm text-gray-600"><strong>College:</strong> {candidate.college_name || 'N/A'}</p>
-                <p className="text-sm text-gray-600"><strong>Passing Marks:</strong> {candidate.passing_marks || 'N/A'}</p>
-                <p className="text-sm text-gray-600"><strong>Education Level:</strong> {candidate.education_level || 'N/A'}</p>
-                <p className="text-sm text-gray-600"><strong>Currently Pursuing:</strong> {candidate.currently_pursuing || 'N/A'}</p>
-                <p className="text-sm text-gray-600"><strong>Highest Education:</strong> {candidate.highest_education || 'N/A'}</p>
+                <p className="text-sm text-gray-600">
+                  <strong>Degree:</strong> {candidate.degree || "N/A"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Specialization:</strong>{" "}
+                  {candidate.specialization || "N/A"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>College:</strong> {candidate.college_name || "N/A"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Passing Marks:</strong>{" "}
+                  {candidate.passing_marks || "N/A"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Education Level:</strong>{" "}
+                  {candidate.education_level || "N/A"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Currently Pursuing:</strong>{" "}
+                  {candidate.currently_pursuing || "N/A"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Highest Education:</strong>{" "}
+                  {candidate.highest_education || "N/A"}
+                </p>
               </div>
             </div>
 
@@ -342,14 +467,42 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
                 <FaGlobe className="text-[#02325a]" /> Preferences
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <p className="text-sm text-gray-600"><strong>Preferred Job Titles:</strong> {preferredJobTitles.length > 0 ? preferredJobTitles.join(', ') : 'Not specified'}</p>
-                <p className="text-sm text-gray-600"><strong>Preferred Locations:</strong> {preferredLocations.length > 0 ? preferredLocations.join(', ') : 'Not specified'}</p>
-                <p className="text-sm text-gray-600"><strong>Preferred Languages:</strong> {candidate.preferred_language || 'Not specified'}</p>
-                <p className="text-sm text-gray-600"><strong>Prefers Night Shift:</strong> {candidate.prefers_night_shift ? 'Yes' : 'No'}</p>
-                <p className="text-sm text-gray-600"><strong>Prefers Day Shift:</strong> {candidate.prefers_day_shift ? 'Yes' : 'No'}</p>
-                <p className="text-sm text-gray-600"><strong>Work from Home:</strong> {candidate.work_from_home ? 'Yes' : 'No'}</p>
-                <p className="text-sm text-gray-600"><strong>Work from Office:</strong> {candidate.work_from_office ? 'Yes' : 'No'}</p>
-                <p className="text-sm text-gray-600"><strong>Field Job:</strong> {candidate.field_job ? 'Yes' : 'No'}</p>
+                <p className="text-sm text-gray-600">
+                  <strong>Preferred Job Titles:</strong>{" "}
+                  {preferredJobTitles.length > 0
+                    ? preferredJobTitles.join(", ")
+                    : "Not specified"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Preferred Locations:</strong>{" "}
+                  {preferredLocations.length > 0
+                    ? preferredLocations.join(", ")
+                    : "Not specified"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Preferred Languages:</strong>{" "}
+                  {candidate.preferred_language || "Not specified"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Prefers Night Shift:</strong>{" "}
+                  {candidate.prefers_night_shift ? "Yes" : "No"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Prefers Day Shift:</strong>{" "}
+                  {candidate.prefers_day_shift ? "Yes" : "No"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Work from Home:</strong>{" "}
+                  {candidate.work_from_home ? "Yes" : "No"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Work from Office:</strong>{" "}
+                  {candidate.work_from_office ? "Yes" : "No"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Field Job:</strong>{" "}
+                  {candidate.field_job ? "Yes" : "No"}
+                </p>
               </div>
             </div>
 
@@ -360,7 +513,10 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
               <div className="flex flex-wrap gap-2">
                 {candidateSkills.length > 0 ? (
                   candidateSkills.map((skill, idx) => (
-                    <span key={idx} className="bg-blue-50 text-[#02325a] rounded-full px-3 py-1 text-sm font-medium">
+                    <span
+                      key={idx}
+                      className="bg-blue-50 text-[#02325a] rounded-full px-3 py-1 text-sm font-medium"
+                    >
                       {skill}
                     </span>
                   ))
@@ -375,13 +531,40 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
                 <FaClock className="text-[#02325a]" /> Activity
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <p className="text-sm text-gray-600"><strong>Active User:</strong> {candidate.active_user ? 'Yes' : 'No'}</p>
-                <p className="text-sm text-gray-600"><strong>Last Login:</strong> {candidate.last_login ? new Date(candidate.last_login).toLocaleString() : 'N/A'}</p>
-                <p className="text-sm text-gray-600"><strong>Total Jobs Applied:</strong> {candidate.total_jobs_applied || 0}</p>
-                <p className="text-sm text-gray-600"><strong>Total Job Views:</strong> {candidate.total_job_views || 0}</p>
-                <p className="text-sm text-gray-600"><strong>Profile Visited:</strong> {candidate.profile_visited ? 'Yes' : 'No'}</p>
-                <p className="text-sm text-gray-600"><strong>Created At:</strong> {candidate.created_at ? new Date(candidate.created_at).toLocaleString() : 'N/A'}</p>
-                <p className="text-sm text-gray-600"><strong>Updated At:</strong> {candidate.updated_at ? new Date(candidate.updated_at).toLocaleString() : 'N/A'}</p>
+                <p className="text-sm text-gray-600">
+                  <strong>Active User:</strong>{" "}
+                  {candidate.active_user ? "Yes" : "No"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Last Login:</strong>{" "}
+                  {candidate.last_login
+                    ? new Date(candidate.last_login).toLocaleString()
+                    : "N/A"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Total Jobs Applied:</strong>{" "}
+                  {candidate.total_jobs_applied || 0}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Total Job Views:</strong>{" "}
+                  {candidate.total_job_views || 0}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Profile Visited:</strong>{" "}
+                  {candidate.profile_visited ? "Yes" : "No"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Created At:</strong>{" "}
+                  {candidate.created_at
+                    ? new Date(candidate.created_at).toLocaleString()
+                    : "N/A"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Updated At:</strong>{" "}
+                  {candidate.updated_at
+                    ? new Date(candidate.updated_at).toLocaleString()
+                    : "N/A"}
+                </p>
               </div>
             </div>
 
@@ -390,11 +573,30 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
                 <FaGlobe className="text-[#02325a]" /> Additional Information
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <p className="text-sm text-gray-600"><strong>English Level:</strong> {candidate.english_level || 'Not specified'}</p>
-                <p className="text-sm text-gray-600"><strong>Notice Period:</strong> {candidate.notice_period || 'Not specified'}</p>
-                <p className="text-sm text-gray-600"><strong>Experience Type:</strong> {candidate.experience_type || 'Not specified'}</p>
-                <p className="text-sm text-gray-600"><strong>Start Date:</strong> {candidate.start_date ? new Date(candidate.start_date).toLocaleDateString() : 'N/A'}</p>
-                <p className="text-sm text-gray-600"><strong>End Date:</strong> {candidate.end_date ? new Date(candidate.end_date).toLocaleDateString() : 'N/A'}</p>
+                <p className="text-sm text-gray-600">
+                  <strong>English Level:</strong>{" "}
+                  {candidate.english_level || "Not specified"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Notice Period:</strong>{" "}
+                  {candidate.notice_period || "Not specified"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Experience Type:</strong>{" "}
+                  {candidate.experience_type || "Not specified"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Start Date:</strong>{" "}
+                  {candidate.start_date
+                    ? new Date(candidate.start_date).toLocaleDateString()
+                    : "N/A"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>End Date:</strong>{" "}
+                  {candidate.end_date
+                    ? new Date(candidate.end_date).toLocaleDateString()
+                    : "N/A"}
+                </p>
               </div>
             </div>
           </div>
@@ -427,37 +629,131 @@ const SkeletonLoader = () => (
   </div>
 );
 
+const MultiSelectCheckbox = ({
+  name,
+  options,
+  value,
+  onChange,
+  placeholder,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Handle clicks outside to close the dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Toggle dropdown visibility
+  const toggleDropdown = () => setIsOpen(!isOpen);
+
+  // Handle checkbox change
+  const handleCheckboxChange = (optionValue) => {
+    const newValue = value.includes(optionValue)
+      ? value.filter((v) => v !== optionValue)
+      : [...value, optionValue];
+    onChange(newValue);
+  };
+
+  return (
+    <div className="relative w-full" ref={dropdownRef}>
+      <div
+        className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 cursor-pointer flex justify-between items-center"
+        onClick={toggleDropdown}
+      >
+        <span className="text-gray-700">
+          {value.length > 0
+            ? value
+                .map(
+                  (val) =>
+                    options.find((opt) => opt.value === val)?.label || val
+                )
+                .join(", ")
+            : placeholder}
+        </span>
+        <FaChevronDown
+          className={`text-gray-500 transform ${isOpen ? "rotate-180" : ""}`}
+        />
+      </div>
+      {isOpen && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          {options?.length > 0 ? (
+            options.map((option) => (
+              <label
+                key={option.value}
+                className="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={value.includes(option.value)}
+                  onChange={() => handleCheckboxChange(option.value)}
+                  className="mr-2 h-4 w-4 text-[#02325a] border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-gray-700">
+                  {option.label} ({option.count})
+                </span>
+              </label>
+            ))
+          ) : (
+            <div className="px-4 py-2 text-gray-500">No options available</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const CandidateList = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const handleBack = () => {
-    router.push('/employer/candidate-database');
+    router.push("/employer/candidate-database");
   };
 
   const [filters, setFilters] = useState(() => {
     const params = Object.fromEntries(searchParams);
+    const parseArrayParam = (param) => {
+      if (!param) return [];
+      return Array.isArray(param) ? param : param.split(",");
+    };
+
     return {
       has_resume: false,
-      number_revealed: params.number_revealed || '',
-      must_have_keywords: params.keywords || '',
-      exclude_keywords: '',
-      active: params.active || '',
-      min_age: '',
-      max_age: '',
-      gender: '',
-      degree: params.education || '',
-      specialization: '',
-      language: '',
-      department: '',
-      city: params.locations || '',
-      english_fluency: '',
-      experience_type: params.experienceType === 'any' ? [] : [params.experienceType] || [],
-      shift_preference: [],
-      min_experience: params.minExperience ? parseInt(params.minExperience, 10) : '',
-      max_experience: params.maxExperience ? parseInt(params.maxExperience, 10) : '',
-      min_salary: params.minSalary ? parseInt(params.minSalary, 10) : '',
-      max_salary: params.maxSalary ? parseInt(params.maxSalary, 10) : '',
+      number_revealed: params.number_revealed || "",
+      number_revealed_period: "",
+      show_number_revealed_period: false,
+      must_have_keywords: params.keywords || "",
+      exclude_keywords: "",
+      active: params.active || "",
+      min_age: "",
+      max_age: "",
+      gender: "",
+      degree: parseArrayParam(params.education),
+      specialization: parseArrayParam(params.specialization),
+      language: parseArrayParam(params.language),
+      department: parseArrayParam(params.department), // Changed to array
+      city: parseArrayParam(params.locations),
+      english_fluency: "",
+      experience_type:
+        params.experienceType === "any"
+          ? []
+          : parseArrayParam(params.experienceType),
+      shift_preference: parseArrayParam(params.shift_preference),
+      min_experience: params.minExperience
+        ? parseInt(params.minExperience, 10)
+        : "",
+      max_experience: params.maxExperience
+        ? parseInt(params.maxExperience, 10)
+        : "",
+      min_salary: params.minSalary ? parseInt(params.minSalary, 10) : "",
+      max_salary: params.maxSalary ? parseInt(params.maxSalary, 10) : "",
     };
   });
 
@@ -475,10 +771,28 @@ const CandidateList = () => {
   });
 
   useEffect(() => {
-    console.log('searchParams:', Object.fromEntries(searchParams));
-    console.log('searchParams size:', searchParams.size);
-    console.log('Current URL:', window.location.href);
+    console.log("searchParams:", Object.fromEntries(searchParams));
+    console.log("searchParams size:", searchParams.size);
+    console.log("Current URL:", window.location.href);
   }, [searchParams]);
+
+  // Fetch full filter options once on mount (no query params for full list)
+  useEffect(() => {
+    const fetchFullFilterOptions = async () => {
+      try {
+        const response = await axios.get(`${baseurl}/filter`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("employerToken")}`,
+          },
+        });
+        setFilterOptions(response.data.filters);
+      } catch (err) {
+        console.error("Error fetching full filter options:", err);
+      }
+    };
+
+    fetchFullFilterOptions();
+  }, []);
 
   const fetchCandidates = async (page = 1, perPage = pagination.per_page) => {
     setLoading(true);
@@ -488,29 +802,60 @@ const CandidateList = () => {
         ...Object.fromEntries(
           Object.entries(filters).filter(([key, value]) => {
             if (Array.isArray(value)) return value.length > 0;
-            if (key === 'has_resume') return true;
-            return value !== '' && value !== false && value !== null;
+            if (key === "has_resume" || key === "show_number_revealed_period")
+              return true;
+            return value !== "" && value !== false && value !== null;
           })
         ),
         page,
         per_page: perPage,
-        has_resume: filters.has_resume ? '1' : '0',
-        ...(filters.experience_type.length > 0 && { experience_type: filters.experience_type.join(',') }),
-        ...(filters.shift_preference.length > 0 && { shift_preference: filters.shift_preference }),
+        has_resume: filters.has_resume ? "1" : "0",
+        ...(filters.experience_type.length > 0 && {
+          experience_type: filters.experience_type.join(","),
+        }),
+        ...(filters.shift_preference.length > 0 && {
+          shift_preference: filters.shift_preference.join(","),
+        }),
+        ...(filters.degree.length > 0 && { degree: filters.degree.join(",") }),
+        ...(filters.specialization.length > 0 && {
+          specialization: filters.specialization.join(","),
+        }),
+        ...(filters.language.length > 0 && {
+          language: filters.language.join(","),
+        }),
+        ...(filters.department.length > 0 && {
+          department: filters.department.join(","),
+        }), // Added department
+        ...(filters.city.length > 0 && { city: filters.city.join(",") }),
+        ...(filters.show_number_revealed_period &&
+          filters.number_revealed_period && {
+            number_revealed: filters.number_revealed_period,
+          }),
+        ...(!filters.show_number_revealed_period &&
+          filters.number_revealed && {
+            number_revealed: filters.number_revealed,
+          }),
       }).toString();
-      console.log('queryParams:', queryParams);
+
+      console.log("queryParams:", queryParams);
       const response = await axios.get(`${baseurl}/filter?${queryParams}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('employerToken')}` }
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("employerToken")}`,
+        },
       });
-      const { data, filters: filtersOptions, pagination: responsePagination } = response.data;
+      const {
+        data,
+        filters: filtersOptions,
+        pagination: responsePagination,
+      } = response.data;
       setCandidates(data);
-      setFilterOptions(filtersOptions || filterOptions);
-      console.log('filterOptions', filtersOptions);
+      // Do not update filterOptions here to keep full options always
       setPagination({ ...responsePagination, per_page: perPage });
     } catch (err) {
-      console.error('Error fetching candidates:', err);
+      console.error("Error fetching candidates:", err);
       setError(
-        err.response?.data?.messages || 'An error occurred while fetching candidates.'
+        err.response?.data?.messages ||
+          "An error occurred while fetching candidates."
       );
       setCandidates([]);
     } finally {
@@ -520,61 +865,96 @@ const CandidateList = () => {
 
   const handleFilterChange = (e) => {
     const { name, value, type, checked } = e.target;
-    if (type === 'checkbox' && name === 'has_resume') {
+    if (type === "checkbox" && name === "has_resume") {
       setFilters((prev) => ({ ...prev, [name]: checked }));
-    } else if (type === 'checkbox' && name === 'experience_type') {
+    } else if (type === "checkbox" && name === "experience_type") {
       setFilters((prev) => ({
         ...prev,
         [name]: checked
           ? [...(prev[name] || []), value]
           : (prev[name] || []).filter((v) => v !== value),
       }));
+    } else if (type === "checkbox" && name === "show_number_revealed_period") {
+      setFilters((prev) => ({
+        ...prev,
+        [name]: checked,
+        number_revealed: checked ? "" : prev.number_revealed,
+        number_revealed_period: checked ? prev.number_revealed_period : "",
+      }));
     } else {
       setFilters((prev) => ({ ...prev, [name]: value }));
     }
   };
 
+  const handleSelectChange = (selectedValues, field) => {
+    setFilters((prev) => ({
+    ...prev,
+    [field]: selectedValues,
+    ...(field === "degree" && { active: "" }), // Reset active filter when degree is changed
+  }));
+};
   const revealNumber = (candidateId) => {
-    axios.post(`${baseurl}/reveal-number`, { candidate_id: candidateId }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('employerToken')}` }
-    })
-      .then(response => {
-        setCandidates(candidates.map(candidate =>
-          candidate.id === candidateId ? { ...candidate, number: response.data.number } : candidate
-        ));
+    axios
+      .post(
+        `${baseurl}/reveal-number`,
+        { candidate_id: candidateId },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("employerToken")}`,
+          },
+        }
+      )
+      .then((response) => {
+        setCandidates(
+          candidates.map((candidate) =>
+            candidate.id === candidateId
+              ? { ...candidate, number: response.data.number }
+              : candidate
+          )
+        );
         alert(response.data.message);
       })
-      .catch(error => {
-        alert(error.response?.data?.error || 'Error revealing number');
+      .catch((error) => {
+        alert(error.response?.data?.error || "Error revealing number");
       });
   };
-
   const handleFilterSubmit = (e) => {
     e.preventDefault();
     const cleanedFilters = Object.fromEntries(
       Object.entries(filters).filter(([key, value]) => {
         if (Array.isArray(value)) return value.length > 0;
-        if (key === 'has_resume') return value === true;
-        return value !== '' && value !== false && value !== null;
+        if (key === "has_resume" || key === "show_number_revealed_period")
+          return value === true;
+        return value !== "" && value !== false && value !== null;
       })
     );
+
     const urlParams = {
-      keywords: cleanedFilters.must_have_keywords || '',
-      locations: cleanedFilters.city || '',
-      minExperience: cleanedFilters.min_experience || '',
-      maxExperience: cleanedFilters.max_experience || '',
-      minSalary: cleanedFilters.min_salary || '',
-      maxSalary: cleanedFilters.max_salary || '',
-      education: cleanedFilters.degree || '',
-      active: cleanedFilters.active || '',
-      experienceType: cleanedFilters.experience_type?.length > 0 ? cleanedFilters.experience_type.join(',') : 'any',
-      numberRevealed: cleanedFilters.number_revealed || '',
+      keywords: cleanedFilters.must_have_keywords || "",
+      locations: cleanedFilters.city?.join(",") || "",
+      minExperience: cleanedFilters.min_experience || "",
+      maxExperience: cleanedFilters.max_experience || "",
+      minSalary: cleanedFilters.min_salary || "",
+      maxSalary: cleanedFilters.max_salary || "",
+      education: cleanedFilters.degree?.join(",") || "",
+      specialization: cleanedFilters.specialization?.join(",") || "",
+      language: cleanedFilters.language?.join(",") || "",
+      department: cleanedFilters.department?.join(",") || "", // Added department
+      active: cleanedFilters.active || "",
+      experienceType:
+        cleanedFilters.experience_type?.length > 0
+          ? cleanedFilters.experience_type.join(",")
+          : "any",
+      number_revealed: cleanedFilters.show_number_revealed_period
+        ? cleanedFilters.number_revealed_period
+        : cleanedFilters.number_revealed || "",
+      shift_preference: cleanedFilters.shift_preference?.join(",") || "",
     };
+
     const query = new URLSearchParams(urlParams).toString();
     router.push(`/employer/candidate-data?${query}`, { scroll: false });
     fetchCandidates(1, pagination.per_page);
   };
-
   const handlePageChange = (page) => {
     if (page >= 1 && page <= pagination.last_page) {
       fetchCandidates(page, pagination.per_page);
@@ -592,45 +972,67 @@ const CandidateList = () => {
   }, [filters]);
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen  bg-gradient-to-br from-blue-50 to-gray-100 ">
       <Sidebar />
       <div className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 overflow-auto">
-        <div className="flex flex-col justify-end lg:flex-row gap-6 lg:gap-8 max-w-7xl mx-auto w-full">
+        <div className="flex flex-col justify-end lg:flex-row gap-6 lg:gap-8 max-w-5xl mx-auto w-full">
           <div className="sticky w-[35%] top-4">
             <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl p-6 sm:p-8 border border-gray-100">
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 flex items-center">
+              <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
                 <FaUser className="mr-2 text-[#02325a]" /> Filter Candidates
               </h2>
+
               <form className="space-y-6" onSubmit={handleFilterSubmit}>
                 <div>
-                  <label className="flex items-center text-sm font-medium text-gray-700">
+                  <label className="flex items-center text-md font-semibold text-gray-800">
                     <input
                       type="checkbox"
                       name="has_resume"
                       checked={filters.has_resume}
                       onChange={handleFilterChange}
-                      className="mr-2 h-5 w-5 text-[#02325a] focus:ring-blue-500 border-gray-300 rounded"
+                      className="mr-3 h-6 w-6 text-[#02325a] border-2 text-md border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 cursor-pointer transition-transform duration-200 hover:scale-110"
                     />
-                    <FaFileAlt className="mr-2 text-[#02325a]" /> Candidates with Resume
+                    <FaFileAlt className="mr-2 text-[#02325a] text-lg" />{" "}
+                    Candidates with Resume
                   </label>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 flex items-center">
-                    <FaPhone className="mr-2 text-[#02325a]" /> Number Revealed
+                  <label className="flex items-center text-md font-semibold text-gray-800">
+                    <input
+                      type="checkbox"
+                      name="show_number_revealed_period"
+                      checked={filters.show_number_revealed_period}
+                      onChange={handleFilterChange}
+                      className="mr-3 h-6 w-6 text-[#02325a] border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 cursor-pointer transition-transform duration-200 hover:scale-110"
+                    />
+                    <FaPhone className="mr-2 text-[#02325a] text-lg" /> Filter
+                    by Number Revealed Period
                   </label>
-                  <select
-                    name="number_revealed"
-                    value={filters.number_revealed}
-                    onChange={handleFilterChange}
-                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
-                  >
-                    <option value="">Select Number Revealed</option>
-                    <option value="1">Revealed</option>
-                    <option value="0">Not Revealed</option>
-                    <option value="last-15-days">Last 15 Days</option>
-                    <option value="last-30-days">Last 30 Days</option>
-                    <option value="last-90-days">Last 90 Days</option>
-                  </select>
+                  {filters.show_number_revealed_period && (
+                    <select
+                      name="number_revealed_period"
+                      value={filters.number_revealed_period}
+                      onChange={handleFilterChange}
+                      className="mt-2 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50 text-gray-700"
+                    >
+                      <option value="">Select Period</option>
+                      <option value="last-15-days">Last 15 Days</option>
+                      <option value="last-30-days">Last 30 Days</option>
+                      <option value="last-90-days">Last 90 Days</option>
+                    </select>
+                  )}
+                  {!filters.show_number_revealed_period && (
+                    <select
+                      name="number_revealed"
+                      value={filters.number_revealed}
+                      onChange={handleFilterChange}
+                      className="mt-2 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50 text-gray-700"
+                    >
+                      <option value="">Select Status</option>
+                      <option value="1">Already Unlocked</option>
+                      <option value="0">Not Unlocked</option>
+                    </select>
+                  )}
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 flex items-center">
@@ -684,11 +1086,17 @@ const CandidateList = () => {
                       onChange={handleFilterChange}
                       className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
                     >
-                      <option value="" disabled>Select Min Age</option>
+                      <option value="" disabled>
+                        Select Min Age
+                      </option>
                       {ageRange
-                        .filter(age => !filters.max_age || age <= filters.max_age)
-                        .map(age => (
-                          <option key={age} value={age}>{age}</option>
+                        .filter(
+                          (age) => !filters.max_age || age <= filters.max_age
+                        )
+                        .map((age) => (
+                          <option key={age} value={age}>
+                            {age}
+                          </option>
                         ))}
                     </select>
                   </div>
@@ -702,11 +1110,17 @@ const CandidateList = () => {
                       onChange={handleFilterChange}
                       className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
                     >
-                      <option value="" disabled>Select Max Age</option>
+                      <option value="" disabled>
+                        Select Max Age
+                      </option>
                       {ageRange
-                        .filter(age => !filters.min_age || age >= filters.min_age)
-                        .map(age => (
-                          <option key={age} value={age}>{age}</option>
+                        .filter(
+                          (age) => !filters.min_age || age >= filters.min_age
+                        )
+                        .map((age) => (
+                          <option key={age} value={age}>
+                            {age}
+                          </option>
                         ))}
                     </select>
                   </div>
@@ -727,126 +1141,123 @@ const CandidateList = () => {
                     <option value="Other">Other</option>
                   </select>
                 </div>
+
                 <div>
                   <label className="text-sm font-medium text-gray-700 flex items-center">
-                    <FaGraduationCap className="mr-2 text-[#02325a]" /> Degree
+                    <FaGraduationCap className="mr-2 text-[#02325a]" /> Degrees
                   </label>
-                  <select
+                  <MultiSelectCheckbox
                     name="degree"
-                    value={filters?.degree}
-                    onChange={handleFilterChange}
-                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
-                  >
-                    <option value="">Select Degree</option>
-                    {filterOptions?.degrees?.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.value} ({option.count})
-                      </option>
-                    ))}
-                  </select>
+                    options={
+                      filterOptions?.degrees?.map((option) => ({
+                        value: option.value,
+                        label: option.value,
+                        count: option.count,
+                      })) || []
+                    }
+                    value={filters.degree}
+                    onChange={(values) => handleSelectChange(values, "degree")}
+                    placeholder="Select Degrees..."
+                  />
                 </div>
+
                 <div>
                   <label className="text-sm font-medium text-gray-700 flex items-center">
-                    <FaGraduationCap className="mr-2 text-[#02325a]" /> Specialization
+                    <FaGraduationCap className="mr-2 text-[#02325a]" />{" "}
+                    Specializations
                   </label>
-                  <select
+                  <MultiSelectCheckbox
                     name="specialization"
-                    value={filters?.specialization}
-                    onChange={handleFilterChange}
-                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
-                  >
-                    <option value="">Select Specialization</option>
-                    {filterOptions?.specializations?.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.value} ({option.count})
-                      </option>
-                    ))}
-                  </select>
+                    options={
+                      filterOptions?.specializations?.map((option) => ({
+                        value: option.value,
+                        label: option.value,
+                        count: option.count,
+                      })) || []
+                    }
+                    value={filters.specialization}
+                    onChange={(values) =>
+                      handleSelectChange(values, "specialization")
+                    }
+                    placeholder="Select Specializations..."
+                  />
                 </div>
+
                 <div>
                   <label className="text-sm font-medium text-gray-700 flex items-center">
-                    <FaLanguage className="mr-2 text-[#02325a]" /> Language
+                    <FaLanguage className="mr-2 text-[#02325a]" /> Languages
                   </label>
-                  <select
+                  <MultiSelectCheckbox
                     name="language"
-                    value={filters?.language}
-                    onChange={handleFilterChange}
-                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
-                  >
-                    <option value="">Select Language</option>
-                    {filterOptions?.languages?.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.value} ({option.count})
-                      </option>
-                    ))}
-                  </select>
+                    options={
+                      filterOptions?.languages?.map((option) => ({
+                        value: option.value,
+                        label: option.value,
+                        count: option.count,
+                      })) || []
+                    }
+                    value={filters.language}
+                    onChange={(values) =>
+                      handleSelectChange(values, "language")
+                    }
+                    placeholder="Select Languages..."
+                  />
                 </div>
+
                 <div>
                   <label className="text-sm font-medium text-gray-700 flex items-center">
                     <FaBriefcase className="mr-2 text-[#02325a]" /> Department
                   </label>
-                  <select
+                  <MultiSelectCheckbox
                     name="department"
+                    options={
+                      filterOptions?.departments?.map((option) => ({
+                        value: option.value,
+                        label: option.value,
+                        count: option.count,
+                      })) || []
+                    }
                     value={filters.department}
-                    onChange={handleFilterChange}
-                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
-                  >
-                    <option value="">Select Department</option>
-                    {filterOptions?.departments?.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.value} ({option.count})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(values) =>
+                      handleSelectChange(values, "department")
+                    }
+                    placeholder="Select Departments..."
+                  />
                 </div>
+
                 <div>
                   <label className="text-sm font-medium text-gray-700 flex items-center">
-                    <FaCity className="mr-2 text-[#02325a]" /> Current City
+                    <FaCity className="mr-2 text-[#02325a]" /> Cities
                   </label>
-                  <select
+                  <MultiSelectCheckbox
                     name="city"
-                    value={filters?.city}
-                    onChange={handleFilterChange}
-                    className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
-                  >
-                    <option value="">Select City</option>
-                    {filterOptions?.cities?.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.value} ({option.count})
-                      </option>
-                    ))}
-                  </select>
+                    options={
+                      filterOptions?.cities?.map((option) => ({
+                        value: option.value,
+                        label: option.value,
+                        count: option.count,
+                      })) || []
+                    }
+                    value={filters.city}
+                    onChange={(values) => handleSelectChange(values, "city")}
+                    placeholder="Select Cities..."
+                  />
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 flex items-center">
-                    <FaBriefcase className="mr-2 text-[#02325a]" /> Employment Type
-                  </label>
-                  <div className="space-y-2">
-                    {filterOptions?.employment_types?.map((option) => (
-                      <label key={option.value} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          name="experience_type"
-                          value={option.value}
-                          checked={filters?.experience_type?.includes(option.value)}
-                          onChange={handleFilterChange}
-                          className="h-5 w-5 text-[#02325a] focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                        <span className="ml-2 text-sm text-gray-700 flex items-center">
-                          {option.value} ({option.count})
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+
                 <div>
                   <label className="text-sm font-medium text-gray-700 flex items-center">
                     <FaClock className="mr-2 text-[#02325a]" /> Shift Preference
                   </label>
                   <select
                     name="shift_preference"
-                    value={filters?.shift_preference}
-                    onChange={handleFilterChange}
+                    value={filters.shift_preference?.[0] || ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setFilters((prev) => ({
+                        ...prev,
+                        shift_preference: value ? [value] : [],
+                      }));
+                    }}
                     className="mt-1 w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-300 bg-white/50"
                   >
                     <option value="">Select Shift Preference</option>
@@ -857,6 +1268,13 @@ const CandidateList = () => {
                     ))}
                   </select>
                 </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-[#02325a] text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-700 transition duration-300"
+                >
+                  Apply Filters
+                </button>
               </form>
             </div>
           </div>
@@ -870,27 +1288,32 @@ const CandidateList = () => {
                   onClick={handleBack}
                   className="py-2 px-4 bg-gray-600 text-white rounded-lg text-sm sm:text-base hover:bg-gray-700 transition-colors"
                 >
-                  Modify Serach
+                  Modify Search
                 </button>
               </div>
               {!loading && candidates.length > 0 && (
                 <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
                   <button
-                    onClick={() => handlePageChange(pagination.current_page - 1)}
+                    onClick={() =>
+                      handlePageChange(pagination.current_page - 1)
+                    }
                     disabled={!pagination.prev_page_url}
                     className={`py-2 px-4 rounded-lg text-sm sm:text-base ${
                       !pagination.prev_page_url
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-[#02325a] text-white hover:bg-blue-700'
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-[#02325a] text-white hover:bg-blue-700"
                     }`}
                   >
                     Previous
                   </button>
                   <span className="text-sm sm:text-base text-gray-700">
-                    Page {pagination.current_page} of {pagination.last_page} ({pagination.total} candidates)
+                    Page {pagination.current_page} of {pagination.last_page} (
+                    {pagination.total} candidates)
                   </span>
                   <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-700">Items per page:</label>
+                    <label className="text-sm font-medium text-gray-700">
+                      Items per page:
+                    </label>
                     <select
                       value={pagination.per_page}
                       onChange={handlePerPageChange}
@@ -902,12 +1325,14 @@ const CandidateList = () => {
                     </select>
                   </div>
                   <button
-                    onClick={() => handlePageChange(pagination.current_page + 1)}
+                    onClick={() =>
+                      handlePageChange(pagination.current_page + 1)
+                    }
                     disabled={!pagination.next_page_url}
                     className={`py-2 px-4 rounded-lg text-sm sm:text-base ${
                       !pagination.next_page_url
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-[#02325a] text-white hover:bg-blue-700'
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-[#02325a] text-white hover:bg-blue-700"
                     }`}
                   >
                     Next
@@ -921,7 +1346,9 @@ const CandidateList = () => {
                   ))}
                 </div>
               ) : error ? (
-                <p className="text-red-600 text-center text-sm sm:text-base">{error}</p>
+                <p className="text-red-600 text-center text-sm sm:text-base">
+                  {error}
+                </p>
               ) : candidates.length === 0 ? (
                 <p className="text-gray-500 text-center text-sm sm:text-base">
                   No candidates found. Try adjusting your filters.

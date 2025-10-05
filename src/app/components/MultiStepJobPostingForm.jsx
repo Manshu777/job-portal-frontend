@@ -354,9 +354,82 @@ const MultiStepJobPostingForm = ({ userdata, companies }) => {
   }
 `;
 
+
+ const generateSkills = async (jobTitle) => {
+
+  localStorage.removeItem("jobPostingFormData"); 
+    if (!jobTitle) {
+      setErrors((prev) => ({
+        ...prev,
+        requiredSkills: "Job Title is required to generate skills.",
+      }));
+      return;
+    }
+
+    setIsSubmitting(true);
+    setApiError(null);
+
+    try {
+      const response = await axios.post(
+        `${baseurl}/generate-skills`,
+        { jobTitle },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const generatedSkills = response.data?.skills || [];
+      console.log("Generated Skills:", generatedSkills);
+
+      // Update formData with new skills
+      setFormData((prev) => ({
+        ...prev,
+        requiredSkills: [...new Set([...prev.requiredSkills, ...generatedSkills])],
+      }));
+
+      // Add new skills to allSkillsOptions if they don't exist
+      const newSkillOptions = generatedSkills
+        .filter(
+          (skill) => !allSkillsOptions.some((opt) => opt.value === skill)
+        )
+        .map((skill) => ({ value: skill, label: skill }));
+      setAllSkillsOptions((prev) => [...prev, ...newSkillOptions]);
+
+      // Save to localStorage
+      localStorage.setItem(
+        "jobPostingFormData",
+        JSON.stringify({
+          data: {
+            ...formData,
+            requiredSkills: [...new Set([...formData.requiredSkills, ...generatedSkills])],
+          },
+          timestamp: new Date().getTime(),
+        })
+      );
+
+      setErrors((prev) => ({ ...prev, requiredSkills: null }));
+    } catch (error) {
+      setApiError("Failed to generate skills. Please try again.");
+      console.error("Skills API Error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+
+  const handleBlur = (e) => {
+  const value = e.target.value.trim();
+  localStorage.removeItem("jobPostingFormData"); // Clear previous data
+  if (value) {
+    generateSkills(value);
+  }
+};
+
   const generateJobDescription = async () => {
     // Ensure required fields exist
-
+    
     console.log("Generate Job Description with AI");
     if (!formData.jobTitle) {
       setErrors((prev) => ({
@@ -426,7 +499,7 @@ quillRef.current.clipboard.dangerouslyPasteHTML(generatedText);
     jobType: "",
     selectedCity:"",
     locations: [],
-    payType: "",
+     payType: "Salary",
     minSalary: "",
     maxSalary: "",
     incentive: "",
@@ -1075,9 +1148,7 @@ const fetchSpecializations = useCallback(async (courseName) => {
     if (validateStep(currentStep)) {
       if (currentStep < 5) {
         setCurrentStep((prev) => prev + 1);
-      } else {
-        setShowConfirmation(true);
-      }
+      } 
       // Scroll to the top of the page
       window.scrollTo({
         top: 0,
@@ -1394,6 +1465,7 @@ const fetchSpecializations = useCallback(async (courseName) => {
     const value = e.target.value;
     handleInputChange(e); // Update formData in parent component
     fetchJobTitles(value);
+
   };
 
   const handleJobRoleSearch = (e) => {
@@ -1492,11 +1564,13 @@ const fetchSpecializations = useCallback(async (courseName) => {
   };
   // Handle job title selection
   const handleSelect = (jobTitle) => {
+
     setFormData((prev) => ({
       ...prev,
       jobTitle: jobTitle.job_title,
       jobRole: "", // Clear job role on new job title selection
     }));
+    generateSkills(jobTitle.job_title);
     setSuggestions([]);
     setShowDropdown(false);
     const newJobRoleOptions = jobTitle.results || [];
@@ -1688,6 +1762,7 @@ const renderStepContent = () => {
                 name="jobTitle"
                 value={formData.jobTitle}
                 onChange={handleChange}
+                // onBlur={handleBlur}
                 className={`mt-2 w-full rounded-lg border ${
                   errors.jobTitle ? "border-red-500" : "border-gray-300"
                 } px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300`}
@@ -2211,7 +2286,8 @@ const renderStepContent = () => {
                     <p className="mt-1 text-xs text-red-500">{errors.course}</p>
                   )}
                 </div>
-                {formData.course && (
+               { console.log("Selected Course:", formData.course)}
+                {formData.course !== "Any" && formData.course !== ""   ? (
                   <div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-800">
@@ -2314,7 +2390,7 @@ const renderStepContent = () => {
                       </p>
                     )}
                   </div>
-                )}
+                ) : null}
               </motion.div>
             )}
 
@@ -2553,33 +2629,32 @@ const renderStepContent = () => {
           </motion.div>
         );
       case 3:
-        return (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="space-y-6"
-          >
-            <div className="flex justify-between items-center">
-              <label className="block text-sm font-semibold text-gray-800">
-                Job Overview *
-              </label>
-              <motion.button
-                type="button"
-                onClick={generateJobDescription}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center px-4 py-2 bg-[#02325a] text-white rounded-lg hover:bg-blue-700 transition-all duration-300 disabled:bg-gray-400"
-                disabled={isSubmitting}
-                title="Generate Job Description with AI"
-              >
-                Generate with AI
-              </motion.button>
-            </div>
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6"
+    >
+      <div className="flex justify-between items-center">
+        <label className="block text-sm font-semibold text-gray-800">
+          Job Overview *
+        </label>
+        <motion.button
+          type="button"
+          onClick={generateJobDescription}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center px-4 py-2 bg-[#02325a] text-white rounded-lg hover:bg-blue-700 transition-all duration-300 disabled:bg-gray-400"
+          disabled={isSubmitting}
+          title="Generate Job Description with AI"
+        >
+          Generate Job Description
+        </motion.button>
+      </div>
 
-
-            <Editor
+      <Editor
         ref={quillRef}
         readOnly={false}
         defaultValue={new Delta().insert("Write or generate a job description...\n")}
@@ -2592,96 +2667,103 @@ const renderStepContent = () => {
           }
         }}
       />
-          
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-800">
-                Required Skills * (Type and add with comma)
-              </label>
-              <CreatableSelect
-                isMulti
-                name="requiredSkills"
-                options={allSkillsOptions}
-                className="mt-2 text-sm"
-                classNamePrefix="select"
-                value={formData.requiredSkills.map((skill) => ({
-                  value: skill,
-                  label: skill,
-                }))}
-                onChange={(selected) => {
-                  const values = selected
-                    ? selected.map((option) => option.value)
-                    : [];
-                  setFormData((prev) => ({ ...prev, requiredSkills: values }));
-                  localStorage.setItem(
-                    "jobPostingFormData",
-                    JSON.stringify({
-                      data: { ...formData, requiredSkills: values },
-                      timestamp: new Date().getTime(),
-                    })
-                  );
-                }}
-                onInputChange={handleSkillsInputChange}
-                onCreateOption={(inputValue) => {
-                  const newSkill = inputValue.trim();
-                  if (newSkill) {
-                    const newOption = { value: newSkill, label: newSkill };
-                    setAllSkillsOptions((prev) => [...prev, newOption]);
-                    setFormData((prev) => ({
-                      ...prev,
-                      requiredSkills: [...prev.requiredSkills, newSkill],
-                    }));
-                    localStorage.setItem(
-                      "jobPostingFormData",
-                      JSON.stringify({
-                        data: {
-                          ...formData,
-                          requiredSkills: [
-                            ...formData.requiredSkills,
-                            newSkill,
-                          ],
-                        },
-                        timestamp: new Date().getTime(),
-                      })
-                    );
-                  }
-                }}
-                placeholder="Select or type skills (add with comma)..."
-                formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
+      <div className="flex justify-between items-center">
+        <label className="block text-sm font-semibold text-gray-800">
+          Required Skills * (Type and add with comma)
+        </label>
+        {/* <motion.button
+          type="button"
+          onClick={generateSkills}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center px-4 py-2 bg-[#02325a] text-white rounded-lg hover:bg-blue-700 transition-all duration-300 disabled:bg-gray-400"
+          disabled={isSubmitting}
+          title="Generate Skills with AI"
+        >
+          Generate Skills
+        </motion.button> */}
+      </div>
+      <CreatableSelect
+        isMulti
+        name="requiredSkills"
+        options={allSkillsOptions}
+        className="mt-2 text-sm"
+        classNamePrefix="select"
+        value={formData.requiredSkills.map((skill) => ({
+          value: skill,
+          label: skill,
+        }))}
+        onChange={(selected) => {
+          const values = selected
+            ? selected.map((option) => option.value)
+            : [];
+          setFormData((prev) => ({ ...prev, requiredSkills: values }));
+          localStorage.setItem(
+            "jobPostingFormData",
+            JSON.stringify({
+              data: { ...formData, requiredSkills: values },
+              timestamp: new Date().getTime(),
+            })
+          );
+        }}
+        onInputChange={handleSkillsInputChange}
+        onCreateOption={(inputValue) => {
+          const newSkill = inputValue.trim();
+          if (newSkill) {
+            const newOption = { value: newSkill, label: newSkill };
+            setAllSkillsOptions((prev) => [...prev, newOption]);
+            setFormData((prev) => ({
+              ...prev,
+              requiredSkills: [...prev.requiredSkills, newSkill],
+            }));
+            localStorage.setItem(
+              "jobPostingFormData",
+              JSON.stringify({
+                data: {
+                  ...formData,
+                  requiredSkills: [...formData.requiredSkills, newSkill],
+                },
+                timestamp: new Date().getTime(),
+              })
+            );
+          }
+        }}
+        placeholder="Select or type skills (add with comma)..."
+        formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
+      />
+      {errors.requiredSkills && (
+        <p className="mt-1 text-xs text-red-500">
+          {errors.requiredSkills}
+        </p>
+      )}
+      <div>
+        <label className="block text-sm font-semibold text-gray-800">
+          Optional Perks
+        </label>
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[
+            "Health Insurance",
+            "Remote Work",
+            "Provident Fund",
+            "Transportation Allowance",
+          ].map((perk) => (
+            <div key={perk} className="flex items-center">
+              <input
+                type="checkbox"
+                name="perks"
+                value={perk}
+                checked={formData.perks.includes(perk)}
+                onChange={handleInputChange}
+                className="h-5 w-5 text-[#02325a] focus:ring-blue-500 transition-all duration-300"
               />
-              {errors.requiredSkills && (
-                <p className="mt-1 text-xs text-red-500">
-                  {errors.requiredSkills}
-                </p>
-              )}
+              <label className="ml-2 text-sm text-gray-700">{perk}</label>
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-800">
-                Optional Perks
-              </label>
-              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[
-                  "Health Insurance",
-                  "Remote Work",
-                  "Provident Fund",
-                  "Transportation Allowance",
-                ].map((perk) => (
-                  <div key={perk} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="perks"
-                      value={perk}
-                      checked={formData.perks.includes(perk)}
-                      onChange={handleInputChange}
-                      className="h-5 w-5 text-[#02325a] focus:ring-blue-500 transition-all duration-300"
-                    />
-                    <label className="ml-2 text-sm text-gray-700">{perk}</label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        );
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
       case 4:
         return (
           <motion.div
@@ -2814,96 +2896,135 @@ const renderStepContent = () => {
       case 5:
         return (
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="space-y-8 bg-gray-50 p-6 rounded-lg shadow-lg"
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-8 bg-gray-50 p-6 rounded-lg shadow-lg"
+    >
+      <h2 className="text-2xl font-bold text-gray-800">Job Posting Preview</h2>
+      <div className="space-y-6">
+        {/* Company Details */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Company Details</h3>
+          <div className="mt-4 space-y-2">
+            <p><span className="font-medium text-gray-600">Company Name:</span> {formData.companyName || formData.newCompanyName || "Not specified"}</p>
+            {formData.newCompanyName && formData.panCard && (
+              <p><span className="font-medium text-gray-600">Document:</span> {formData.panCard.name || "Document uploaded"}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Job Details */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Job Details</h3>
+          <div className="mt-4 space-y-2">
+            <p><span className="font-medium text-gray-600">Job Title:</span> {formData.jobTitle || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Job Role:</span> {formData.jobRole || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Job Type:</span> {formData.jobType || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">City:</span> {formData.selectedCity?.name || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Areas:</span> {formData.locations.length > 0 ? formData.locations.map(loc => loc.area_name).join(", ") : "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Pay Type:</span> {formData.payType || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Salary Range:</span> {formData.minSalary ? `₹${formatINR(formData.minSalary)}` : "Not specified"} {formData.maxSalary ? `- ₹${formatINR(formData.maxSalary)}` : ""}</p>
+            {formData.payType === "Salary + Incentive" && (
+              <p><span className="font-medium text-gray-600">Incentive Up To:</span> {formData.incentive ? `₹${formatINR(formData.incentive)}` : "Not specified"}</p>
+            )}
+            <p><span className="font-medium text-gray-600">Joining Fee Required:</span> {formData.joiningFeeRequired || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Number of Vacancies:</span> {formData.numberOfCandidatesRequired || "Not specified"}</p>
+          </div>
+        </div>
+
+        {/* Candidate Requirements */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Candidate Requirements</h3>
+          <div className="mt-4 space-y-2">
+            <p><span className="font-medium text-gray-600">Education Level:</span> {formData.educationLevel || "Not specified"}</p>
+            {formData.course && <p><span className="font-medium text-gray-600">Course:</span> {formData.course}</p>}
+            {formData.specialization && <p><span className="font-medium text-gray-600">Specialization:</span> {formData.specialization}</p>}
+            <p><span className="font-medium text-gray-600">English Level:</span> {formData.englishLevel || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Experience Required:</span> {formData.totalExperienceRequired || "Not specified"}</p>
+            {formData.totalExperienceRequired === "Experienced" && (
+              <>
+                <p><span className="font-medium text-gray-600">Minimum Experience:</span> {formData.experienceLevel ? `${formData.experienceLevel} years` : "Not specified"}</p>
+                <p><span className="font-medium text-gray-600">Maximum Experience:</span> {formData.experienceMax ? `${formData.experienceMax} years` : "Not specified"}</p>
+              </>
+            )}
+            <p><span className="font-medium text-gray-600">Gender Preference:</span> {formData.genderPreference || "Not specified"}</p>
+          </div>
+        </div>
+
+        {/* Job Description and Skills */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Job Description and Skills</h3>
+          <div className="mt-4 space-y-2">
+            <p><span className="font-medium text-gray-600">Job Overview:</span></p>
+            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: formData.jobOverview || "Not specified" }} />
+            <p><span className="font-medium text-gray-600">Required Skills:</span> {formData?.requiredSkills?.length > 0 ? formData.requiredSkills.join(", ") : "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Optional Perks:</span> {formData?.perks?.length > 0 ? formData?.perks?.join(", ") : "None"}</p>
+          </div>
+        </div>
+
+        {/* Interview Details */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Interview Details</h3>
+          <div className="mt-4 space-y-2">
+            <p><span className="font-medium text-gray-600">Interview Mode:</span> {formData.interviewMode || "Not specified"}</p>
+            {formData.interviewMode !== "Online" && (
+              <p><span className="font-medium text-gray-600">Interview Location:</span> {formData.interviewLocation || "Not specified"}</p>
+            )}
+            <p><span className="font-medium text-gray-600">Contact Preference:</span> {formData.contactPreference || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Contact Email:</span> {formData.contactEmail || "Not specified"}</p>
+            <p><span className="font-medium text-gray-600">Contact Phone:</span> {formData.contactPhone || "Not specified"}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Submit Button in Step 5 */}
+      <div className="mt-8 pt-6 border-t border-gray-200">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+          <motion.button
+            type="button"
+            onClick={handleBack}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center justify-center px-6 py-3 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-300"
           >
-            <h2 className="text-2xl font-bold text-gray-800">Job Posting Preview</h2>
-            <div className="space-y-6">
-              {/* Company Details */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Company Details</h3>
-                <div className="mt-4 space-y-2">
-                  <p><span className="font-medium text-gray-600">Company Name:</span> {formData.companyName || formData.newCompanyName || "Not specified"}</p>
-                  {formData.newCompanyName && formData.panCard && (
-                    <p><span className="font-medium text-gray-600">Document:</span> {formData.panCard.name || "Document uploaded"}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Job Details */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Job Details</h3>
-                <div className="mt-4 space-y-2">
-                  <p><span className="font-medium text-gray-600">Job Title:</span> {formData.jobTitle || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Job Role:</span> {formData.jobRole || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Job Type:</span> {formData.jobType || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">City:</span> {formData.selectedCity?.name || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Areas:</span> {formData.locations.length > 0 ? formData.locations.map(loc => loc.area_name).join(", ") : "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Pay Type:</span> {formData.payType || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Salary Range:</span> {formData.minSalary ? `₹${formatINR(formData.minSalary)}` : "Not specified"} {formData.maxSalary ? `- ₹${formatINR(formData.maxSalary)}` : ""}</p>
-                  {formData.payType === "Salary + Incentive" && (
-                    <p><span className="font-medium text-gray-600">Incentive Up To:</span> {formData.incentive ? `₹${formatINR(formData.incentive)}` : "Not specified"}</p>
-                  )}
-                  <p><span className="font-medium text-gray-600">Joining Fee Required:</span> {formData.joiningFeeRequired || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Number of Vacancies:</span> {formData.numberOfCandidatesRequired || "Not specified"}</p>
-                </div>
-              </div>
-
-              {/* Candidate Requirements */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Candidate Requirements</h3>
-                <div className="mt-4 space-y-2">
-                  <p><span className="font-medium text-gray-600">Education Level:</span> {formData.educationLevel || "Not specified"}</p>
-                  {formData.course && <p><span className="font-medium text-gray-600">Course:</span> {formData.course}</p>}
-                  {formData.specialization && <p><span className="font-medium text-gray-600">Specialization:</span> {formData.specialization}</p>}
-                  <p><span className="font-medium text-gray-600">English Level:</span> {formData.englishLevel || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Experience Required:</span> {formData.totalExperienceRequired || "Not specified"}</p>
-                  {formData.totalExperienceRequired === "Experienced" && (
-                    <>
-                      <p><span className="font-medium text-gray-600">Minimum Experience:</span> {formData.experienceLevel ? `${formData.experienceLevel} years` : "Not specified"}</p>
-                      <p><span className="font-medium text-gray-600">Maximum Experience:</span> {formData.experienceMax ? `${formData.experienceMax} years` : "Not specified"}</p>
-                    </>
-                  )}
-                  <p><span className="font-medium text-gray-600">Gender Preference:</span> {formData.genderPreference || "Not specified"}</p>
-                </div>
-              </div>
-
-              {/* Job Description and Skills */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Job Description and Skills</h3>
-                <div className="mt-4 space-y-2">
-                  <p><span className="font-medium text-gray-600">Job Overview:</span></p>
-                  <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: formData.jobOverview || "Not specified" }} />
-                  <p><span className="font-medium text-gray-600">Required Skills:</span> {formData?.requiredSkills?.length > 0 ? formData.requiredSkills.join(", ") : "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Optional Perks:</span> {formData?.perks?.length > 0 ? formData?.perks?.join(", ") : "None"}</p>
-                </div>
-              </div>
-
-              {/* Interview Details */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-300 pb-2">Interview Details</h3>
-                <div className="mt-4 space-y-2">
-                  <p><span className="font-medium text-gray-600">Interview Mode:</span> {formData.interviewMode || "Not specified"}</p>
-                  {formData.interviewMode !== "Online" && (
-                    <p><span className="font-medium text-gray-600">Interview Location:</span> {formData.interviewLocation || "Not specified"}</p>
-                  )}
-                  <p><span className="font-medium text-gray-600">Contact Preference:</span> {formData.contactPreference || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Contact Email:</span> {formData.contactEmail || "Not specified"}</p>
-                  <p><span className="font-medium text-gray-600">Contact Phone:</span> {formData.contactPhone || "Not specified"}</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+            <FaChevronLeft className="mr-2" />
+            Back to Edit
+          </motion.button>
+          <motion.button
+            type="submit"
+            disabled={isSubmitting}
+            whileHover={{ scale: isSubmitting ? 1 : 1.05 }}
+            whileTap={{ scale: isSubmitting ? 1 : 0.95 }}
+            className={`flex items-center justify-center px-8 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+              isSubmitting
+                ? "bg-gray-400 text-white cursor-not-allowed"
+                : "bg-gradient-to-r from-[#02325a] to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl"
+            }`}
+          >
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Submitting...
+              </>
+            ) : (
+              <>
+                <FaCheck className="mr-2" />
+                Submit Job Posting
+              </>
+            )}
+          </motion.button>
+        </div>
+      </div>
+    </motion.div>
         );
       default:
         return null;
     }
   };
   return (
-    <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen  py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}

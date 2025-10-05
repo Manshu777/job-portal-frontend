@@ -8,29 +8,27 @@ import { baseurl } from "@/app/components/common";
 import { parseISO, addDays, isAfter, format } from "date-fns";
 import axios from "axios";
 import { HiDotsVertical, HiTrash } from "react-icons/hi";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
-
-import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react"; // For dropdown menu, install @headlessui/react
+import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 
 const EmployerDashboard = () => {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false); // Modal visibility
-  const [SuccessModel, setSuccessModel] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [successModel, setSuccessModel] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState({
     other_certificate: null,
   });
   const [companies, setCompanies] = useState([]);
-  const [SelectedCompany, setSelectedCompany] = useState([]);
+  const [selectedCompany, setSelectedCompany] = useState([]);
   const [isVisible, setIsVisible] = useState(true);
   const [jobs, setJobs] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [formData, setFormData] = useState({
     jobTitle: "",
     description: "",
-    skills: "",
     salaryRange: "",
     jobType: "full-time",
     location: "",
@@ -53,16 +51,12 @@ const EmployerDashboard = () => {
           },
         });
 
-
-        console.log('is_verified',res.data.data.is_blocked)
-
         if (res.data && res.data.success) {
           setIsLoggedIn(res.data.data);
-
           setIsVisible(res.data.data.is_blocked);
         }
       } catch (err) {
-        console.error("Not logged in or invalid token");
+        console.error("Not logged in or invalid token", err);
         setIsLoggedIn(false);
       }
     };
@@ -72,16 +66,47 @@ const EmployerDashboard = () => {
 
   useEffect(() => {
     const fetchJobs = async () => {
-      try {
-        const employerId = isLoggedIn.id;
-        console.log("isLogged", employerId);
-        const response = await fetch(`${baseurl}/jobs/employer/${employerId}`);
-        const result = await response.json();
+      if (!isLoggedIn.id) return;
 
-        if (result.status === "success") {
-          setJobs(result.data);
+      try {
+        const token = localStorage.getItem("employerToken");
+        const response = await axios.get(`${baseurl}/jobs/employer/${isLoggedIn.id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        console.log("Fetching jobs for employer ID:", response);
+
+        if (response.data.status === "success") {
+          // Fetch dashboard data for each job to get matches and applications
+          const jobsWithDetails = await Promise.all(
+            response.data.data.map(async (job) => {
+              try {
+                const dashboardResponse = await axios.get(
+                  `${baseurl}/jobs/${job.id}/dashboard`,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                    },
+                  }
+                );
+                if (dashboardResponse.data.status === "success") {
+                  return {
+                    ...job,
+                    matches: dashboardResponse.data.data.matches.length,
+                    applications: dashboardResponse.data.data.applications.length,
+                  };
+                }
+                return job;
+              } catch (error) {
+                console.error(`Error fetching dashboard for job ${job.id}:`, error);
+                return job;
+              }
+            })
+          );
+          setJobs(jobsWithDetails);
         } else {
-          console.error("Failed to fetch jobs:", result.message);
+          console.error("Failed to fetch jobs:", response.data.message);
         }
       } catch (error) {
         console.error("Error fetching jobs:", error);
@@ -93,13 +118,19 @@ const EmployerDashboard = () => {
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const response = await axios.get(`${baseurl}/getall/companies`);
-        const FiltereData = response.data.data.filter(
+        const token = localStorage.getItem("employerToken");
+        const response = await axios.get(`${baseurl}/getall/companies`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const filteredData = response.data.data.filter(
           (p) => p.employer_id == isLoggedIn.id
         );
-        console.log(FiltereData);
-        setCompanies(FiltereData);
-      } catch (error) {}
+        setCompanies(filteredData);
+      } catch (error) {
+        console.error("Error fetching companies:", error);
+      }
     };
     fetchCompanies();
   }, [isLoggedIn]);
@@ -107,7 +138,6 @@ const EmployerDashboard = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    girl;
   };
 
   const handleSubmit = (e) => {
@@ -124,19 +154,19 @@ const EmployerDashboard = () => {
     });
   };
 
-  const handleSubmitdocs = async (event) => {
+  const handleSubmitDocs = async (event) => {
     event.preventDefault();
 
     const formData = new FormData();
-
-      formData.append("id", companies[0].id);
-      formData.append("other_certificate", selectedFiles.other_certificate);
-    
+    formData.append("id", companies[0].id);
+    formData.append("other_certificate", selectedFiles.other_certificate);
 
     try {
+      const token = localStorage.getItem("employerToken");
       const response = await axios.post(`${baseurl}/update-docs`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
         },
       });
       if (response.status === 200) {
@@ -155,12 +185,8 @@ const EmployerDashboard = () => {
     const selectedCompany = companies.find(
       (company) => company.id === parseInt(companyId)
     );
-
     setSelectedCompany(selectedCompany);
   };
-
-
-  console.log("isLoggedIn", isLoggedIn);
 
   if (
     isLoggedIn.is_verified === 1 ||
@@ -184,7 +210,7 @@ const EmployerDashboard = () => {
               support for assistance.
             </p>
             {isVisible && (
-              <div className="flex items-center bg-red-100 text-red-700 border border-red-300 rounded-lg p-4 shadow-lg  mx-auto mb-4">
+              <div className="flex items-center bg-red-100 text-red-700 border border-red-300 rounded-lg p-4 shadow-lg mx-auto mb-4">
                 <div className="mr-4">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -201,7 +227,7 @@ const EmployerDashboard = () => {
                 </div>
                 <div className="flex-1">
                   <p className="m-0">
-                    <b>Remark : </b>
+                    <b>Remark: </b>
                     {isLoggedIn.remark}
                   </p>
                 </div>
@@ -222,27 +248,9 @@ const EmployerDashboard = () => {
                     <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
                       Update Documents
                     </h2>
-
-                    <form onSubmit={handleSubmitdocs}>
+                    <form onSubmit={handleSubmitDocs}>
                       <div className="mb-6">
-                        
-                       { console.log('companies',companies[0].id)}
-                       <input type="hidden" value={companies[0].id}>
-                       </input>
-                        {/* <select
-                          className="mt-2 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          onChange={handleSelectChange}
-                          value={SelectedCompany ? SelectedCompany.id : ""}
-                        >
-                          <option value="" disabled>
-                            Select a company
-                          </option>
-                          {companies.map((company) => (
-                            <option key={company.id} value={company.id}>
-                              {company.name}
-                            </option>
-                          ))}
-                        </select> */}
+                        <input type="hidden" value={companies[0]?.id} />
                       </div>
                       <div className="mb-6">
                         <label className="block text-gray-700 font-semibold mb-1">
@@ -257,11 +265,10 @@ const EmployerDashboard = () => {
                           className="mt-4 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
-
                       <div className="flex justify-end space-x-4">
                         <button
                           type="button"
-                          onClick={() => setIsModalOpen(false)} // Close modal
+                          onClick={() => setIsModalOpen(false)}
                           className="px-6 py-3 bg-gray-400 text-white rounded-lg hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-300"
                         >
                           Cancel
@@ -277,8 +284,7 @@ const EmployerDashboard = () => {
                   </div>
                 </div>
               )}
-
-              {SuccessModel && (
+              {successModel && (
                 <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] bg-opacity-50 flex justify-center items-center z-50">
                   <div className="bg-white p-8 rounded-lg shadow-lg w-full sm:w-7xl max-w-lg">
                     <h2 className="text-2xl font-semibold text-green-600 text-center mb-4">
@@ -288,7 +294,6 @@ const EmployerDashboard = () => {
                       Your documents have been updated successfully. You can now
                       proceed.
                     </p>
-
                     <div className="flex justify-center">
                       <a
                         href="/"
@@ -300,18 +305,17 @@ const EmployerDashboard = () => {
                   </div>
                 </div>
               )}
-
               {!isVisible && (
                 <a
-                  href="/employer/verify-status" // Replace with your verification status page URL
+                  href="/employer/verify-status"
                   className="px-6 py-3 bg-[#02325a] text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-300"
                 >
                   Check Verification Status
                 </a>
               )}
               <a
-                href="/contact" // Replace with your support page URL
-                className={`px-6 py-3  bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-300`}
+                href="/contact"
+                className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-300"
               >
                 Contact Support
               </a>
@@ -326,9 +330,8 @@ const EmployerDashboard = () => {
     );
   }
 
-  // Render the full dashboard if verified
   return (
-    <div className="flex bg-gray-100">
+    <div className="flex  bg-gradient-to-br from-blue-50 to-gray-100">
       <Sidebar
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
@@ -338,7 +341,7 @@ const EmployerDashboard = () => {
           isSidebarOpen ? "ml-64" : "ml-20"
         }`}
       >
-        <div className=" mt-4">
+        <div className="mt-4">
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-2xl font-bold text-gray-800">
               Employer Dashboard
@@ -350,14 +353,24 @@ const EmployerDashboard = () => {
               <FiPlus className="mr-2" /> Post New Job
             </button>
           </div>
-
           {isVisible && (
-            <div className="flex items-center bg-red-100 text-red-700 border border-red-300 rounded-lg p-4 shadow-lg  mx-auto mb-4">
+            <div className="flex items-center bg-red-100 text-red-700 border border-red-300 rounded-lg p-4 shadow-lg mx-auto mb-4">
               <div className="mr-4">
-            
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  fill="currentColor"
+                  className="bi bi-exclamation-circle text-red-700"
+                  viewBox="0 0 16 16"
+                >
+                  <path d="M8 1a7 7 0 1 0 7 7 7 7 0 0 0-7-7zm0 12a5 5 0 1 1 5-5 5 5 0 0 1-5 5z" />
+                  <path d="M7.002 5.001a.5.5 0 0 1 .492.41L7.5 5.5v3a.5.5 0 0 1-.992.09L6.5 8.5V5.5a.5.5 0 0 1 .502-.499z" />
+                  <path d="M8 10a.5.5 0 0 1 .5.5V11a.5.5 0 0 1-.992.09L7.5 11v-.5a.5.5 0 0 1 .5-.5z" />
+                </svg>
               </div>
               <div className="flex-1">
-                <p className="m-0">{isLoggedIn.remark }</p>
+                <p className="m-0">{isLoggedIn.remark}</p>
               </div>
               <button
                 onClick={handleClose}
@@ -367,7 +380,6 @@ const EmployerDashboard = () => {
               </button>
             </div>
           )}
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <MetricCard
               title="Total Job Visits"
@@ -395,7 +407,6 @@ const EmployerDashboard = () => {
             />
           </div>
         </div>
-
         <div className="mb-8 px-[2%] py-5">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">
             Your Job Postings
@@ -438,118 +449,14 @@ const MetricCard = ({ title, value, change, isPositive }) => {
   );
 };
 
-const JobCard = ({ job }) => {
-  let additionalRequirements = { skills: [] };
-  try {
-    if (
-      job?.additional_requirements &&
-      typeof job.additional_requirements === "string"
-    ) {
-      additionalRequirements = JSON.parse(job.additional_requirements);
-    }
-  } catch (error) {
-    console.error("Error parsing additional_requirements:", error);
-  }
-
-  const createdAt = job?.created_at ? parseISO(job.created_at) : new Date();
-  const deadline = addDays(createdAt, job?.job_expire_time || 14);
-  const deadlineFormatted = deadline.toLocaleDateString();
-  const isExpired = isAfter(new Date(), deadline);
-  const status = isExpired ? "Expired" : "Active";
-  const verify = job.is_verified ? "Active" : "Not Active";
-
-  const postedDate = format(createdAt, "d, MMMM yyyy"); // Updated to desired format
-
-  const skills =
-    typeof job?.additional_requirements === "string"
-      ? JSON.parse(job.additional_requirements)
-      : job?.additional_requirements || [];
-  return (
-    <div className="bg-white w-full mx-auto shadow-sm rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md">
-      <div className="p-5">
-        {/* Header with Job Title, Status, and Menu */}
-        <div className="flex justify-between items-center mb-3">
-          <h3 className="text-lg font-semibold text-gray-900 truncate">
-            {job?.job_title || "Untitled Job"}
-          </h3>
-          <div className="flex items-center space-x-2">
-            <span
-              className={`px-2 py-1 text-xs font-medium rounded-full ${
-                status === "Active"
-                  ? "bg-green-50 text-green-600"
-                  : "bg-red-50 text-red-600"
-              }`}
-            >
-              {status}
-            </span>
-            <HiDotsVertical className="text-gray-500 cursor-pointer hover:text-gray-700" />
-          </div>
-        </div>
-
-        {/* Simplified Job Info */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm text-gray-600">
-              <span className="font-medium">Location:</span>{" "}
-              {job?.location || "N/A"}
-            </p>
-            <p className="text-sm text-gray-600">
-              <span className="font-medium">Posted:</span> {postedDate}
-            </p>
-
-            {/* <p className="text-sm text-gray-600">
-                     <span className="font-medium">Deadline:</span> {deadlineFormatted}
-                   </p> */}
-            <p className="text-sm text-gray-600">
-              <span className="font-medium">Posted by:</span>{" "}
-              {job?.employer?.name || "N/A"}
-            </p>
-          </div>
-
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm text-gray-600">
-              <span className="font-medium">Salary:</span>{" "}
-              {job?.min_salary && job?.max_salary
-                ? `₹${parseInt(job.min_salary).toLocaleString()} - ₹${parseInt(
-                    job.max_salary
-                  ).toLocaleString()}`
-                : "N/A"}
-            </p>
-            {parseFloat(job?.incentive) >= 1 && (
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">Incentive:</span> ₹
-                {parseFloat(job.incentive).toLocaleString()}
-              </p>
-            )}
-            <p className="text-sm text-gray-600">
-              <span className="font-medium">Type:</span>{" "}
-              {job?.job_type || "N/A"} • {job?.work_location_type || "N/A"}
-            </p>
-            <p className="text-sm text-gray-600">
-              <span className="font-medium">Skills:</span>{" "}
-              {skills.length > 0 ? skills.join(", ") : "None"}
-            </p>
-
-            <p className="text-sm text-gray-600">
-              <span className="font-medium">Company:</span>{" "}
-              {job?.company?.name || "N/A"}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const NewJobCard = ({ job, setJobs }) => {
   const createdAt = job?.created_at ? parseISO(job.created_at) : new Date();
   const deadline = addDays(createdAt, job?.job_expire_time || 14);
   const deadlineFormatted = deadline.toLocaleDateString();
   const isExpired = isAfter(new Date(), deadline);
-
-  const postedDate = format(createdAt, "d, MMMM yyyy"); // Updated to desired format
+  const postedDate = format(createdAt, "d, MMMM yyyy");
   const status = isExpired ? "Expired" : "Active";
-  const router = useRouter(); // Ensure router is imported and available
+  const router = useRouter();
 
   const handleRefreshJob = async () => {
     try {
@@ -696,17 +603,14 @@ const NewJobCard = ({ job, setJobs }) => {
             <span>{job?.employer?.name || "N/A"}</span>
           </div>
         </div>
-
-        {/* <div className="w-[15%] flex flex-col justify-start">
-          <strong>65796</strong>
-          <span className="text-md text-slate-600">Applied to job</span>
-        </div> */}
-
         <div className="w-[15%] flex flex-col justify-start">
           <strong>{job?.matches || 0}</strong>
-          <span className="text-md text-slate-600">Database Matches:</span>
+          <span className="text-md text-slate-600">Database Matches</span>
         </div>
-
+        <div className="w-[15%] flex flex-col justify-start">
+          <strong>{job?.applications || 0}</strong>
+          <span className="text-md text-slate-600">Applications</span>
+        </div>
         <div className="w-[20%] flex justify-end items-center">
           <Menu as="div" className="relative">
             <MenuButton className="focus:outline-none">
@@ -725,7 +629,7 @@ const NewJobCard = ({ job, setJobs }) => {
                   </button>
                 )}
               </MenuItem>
-              <MenuItem>
+              {/* <MenuItem>
                 {({ active }) => (
                   <button
                     onClick={handleEditJob}
@@ -736,7 +640,7 @@ const NewJobCard = ({ job, setJobs }) => {
                     Edit Job
                   </button>
                 )}
-              </MenuItem>
+              </MenuItem> */}
               <MenuItem>
                 {({ active }) => (
                   <button

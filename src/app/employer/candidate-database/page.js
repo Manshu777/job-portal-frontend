@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect } from 'react';
-import Sidebar from '@/app/components/Sidebar';
 import { useRouter } from 'next/navigation';
 import AsyncCreatableSelect from 'react-select/async-creatable';
 import {
@@ -13,7 +12,7 @@ import {
 import { baseurl } from '@/app/components/common';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-
+import Sidebar from '@/app/components/Sidebar';
 const CandidatesDashboard = () => {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -29,11 +28,11 @@ const CandidatesDashboard = () => {
   });
   const [keywordInput, setKeywordInput] = useState('');
   const [locationInput, setLocationInput] = useState('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [recentSearches, setRecentSearches] = useState([]);
-
+const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   // Experience range options
   const experienceOptions = [
+    { value: '0', label: 'Fresher' },
     { value: '0.25', label: '3 Months' },
     { value: '0.5', label: '6 Months' },
     ...Array.from({ length: 30 }, (_, i) => ({
@@ -63,10 +62,8 @@ const CandidatesDashboard = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === 'experienceType') {
-      // Clear localStorage and recent searches when experienceType changes
-      localStorage.removeItem('recentSearches');
-      setRecentSearches([]);
-      // Reset form fields
+      // localStorage.removeItem('recentSearches');
+      // setRecentSearches([]);
       setFormData({
         ...formData,
         experienceType: value,
@@ -122,15 +119,18 @@ const CandidatesDashboard = () => {
     return inputValue;
   };
 
-  // Handle keyword select (including custom options)
+  // Handle keyword select
   const handleKeywordChange = (selectedOptions, actionMeta) => {
     let selectedKeywords = selectedOptions ? selectedOptions.slice(0, 10) : [];
-    if (actionMeta.action === 'create-option') {
-      const newOption = actionMeta.option;
-      selectedKeywords = [
-        ...selectedKeywords.filter((opt) => opt.__isNew__ !== true),
-        { value: newOption.value.toLowerCase(), label: newOption.value, __isNew__: true },
-      ].slice(0, 10);
+    if (actionMeta.action === 'create-option' || actionMeta.action === 'select-option') {
+      const newOption = actionMeta.option || { value: keywordInput.toLowerCase(), label: keywordInput, __isNew__: true };
+      if (keywordInput && !selectedKeywords.some(opt => opt.value === newOption.value)) {
+        selectedKeywords = [
+          ...selectedKeywords.filter((opt) => opt.__isNew__ !== true || opt.value !== newOption.value),
+          newOption,
+        ].slice(0, 10);
+      }
+      setKeywordInput('');
     }
     setFormData({ ...formData, keywords: selectedKeywords });
   };
@@ -161,15 +161,18 @@ const CandidatesDashboard = () => {
     return inputValue;
   };
 
-  // Handle location select (including custom options)
+  // Handle location select
   const handleLocationChange = (selectedOptions, actionMeta) => {
     let selectedLocations = selectedOptions ? selectedOptions.slice(0, 3) : [];
-    if (actionMeta.action === 'create-option') {
-      const newOption = actionMeta.option;
-      selectedLocations = [
-        ...selectedLocations.filter((opt) => opt.__isNew__ !== true),
-        { value: newOption.value.toLowerCase(), label: newOption.value, __isNew__: true },
-      ].slice(0, 3);
+    if (actionMeta.action === 'create-option' || actionMeta.action === 'select-option') {
+      const newOption = actionMeta.option || { value: locationInput.toLowerCase(), label: locationInput, __isNew__: true };
+      if (locationInput && !selectedLocations.some(opt => opt.value === newOption.value)) {
+        selectedLocations = [
+          ...selectedLocations.filter((opt) => opt.__isNew__ !== true || opt.value !== newOption.value),
+          newOption,
+        ].slice(0, 3);
+      }
+      setLocationInput('');
     }
     setFormData({ ...formData, locations: selectedLocations });
   };
@@ -177,7 +180,6 @@ const CandidatesDashboard = () => {
   // Validate fields
   const validateFields = () => {
     const { experienceType, keywords, locations, minExperience, maxExperience, education } = formData;
-
     if (experienceType === 'fresher') {
       if (education === '') return 'Education is required for Fresher Only';
     } else if (experienceType === 'experienced') {
@@ -189,7 +191,6 @@ const CandidatesDashboard = () => {
       if (keywords.length === 0) return 'At least one Keyword is required for Any';
       if (education === '') return 'Education is required for Any';
     }
-
     if (formData.minSalary && formData.maxSalary) {
       if (parseInt(formData.minSalary) >= parseInt(formData.maxSalary)) {
         return 'Minimum salary must be less than maximum salary';
@@ -207,14 +208,18 @@ const CandidatesDashboard = () => {
         icon: 'error',
         title: 'Validation Error',
         text: validationError,
-        confirmButtonColor: '#02325a',
+        confirmButtonColor: '#1e40af',
       });
       return;
     }
 
-    const newRecent = [formData, ...recentSearches].slice(0, 5);
-    setRecentSearches(newRecent);
-    localStorage.setItem('recentSearches', JSON.stringify(newRecent));
+    const stringifiedForm = JSON.stringify(formData);
+    const isDuplicate = recentSearches.some(search => JSON.stringify(search) === stringifiedForm);
+    if (!isDuplicate) {
+      const newRecent = [formData, ...recentSearches].slice(0, 10);
+      setRecentSearches(newRecent);
+      localStorage.setItem('recentSearches', JSON.stringify(newRecent));
+    }
 
     const queryParams = new URLSearchParams({
       keywords: formData.keywords.map((k) => k.value).join(','),
@@ -265,310 +270,343 @@ const CandidatesDashboard = () => {
     setFormData(search);
   };
 
-  // Recent Searches content for Sidebar
+  // Recent Searches content
   const recentSearchesContent = (
-    <div className="p-4">
-      <h2 className="text-lg font-bold text-gray-800 mb-3">Recent Searches</h2>
+    <div className="p-4 sm:p-6 bg-white rounded-2xl shadow-lg h-fit">
+      <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+        <BriefcaseIcon className="h-6 w-6 mr-2 text-indigo-600" />
+        Recent Searches (Last 10)
+      </h2>
       {recentSearches.length > 0 ? (
-        <ul className="space-y-3">
+        <ul className="space-y-4 max-h-[600px] overflow-y-auto">
           {recentSearches.map((search, index) => (
-            <li key={index} className="border-b pb-2">
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-gray-700">
-                  <strong>Type:</strong> {search.experienceType}
-                </span>
-                <span className="text-sm text-gray-600">
-                  <strong>Keywords:</strong> {search.keywords.map(k => k.label).join(', ')}
-                </span>
-                <span className="text-sm text-gray-600">
-                  <strong>Locations:</strong> {search.locations.map(l => l.label).join(', ')}
-                </span>
+            <li
+              key={index}
+              className="bg-gray-50 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
+            >
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center">
+                  <UserIcon className="h-5 w-5 text-gray-500 mr-2" />
+                  <span className="text-sm font-medium text-gray-800">
+                    <strong>Type:</strong> {search.experienceType.charAt(0).toUpperCase() + search.experienceType.slice(1)}
+                  </span>
+                </div>
+                {search.keywords.length > 0 && (
+                  <div className="flex items-center">
+                    <CodeBracketIcon className="h-5 w-5 text-gray-500 mr-2" />
+                    <span className="text-sm text-gray-600">
+                      <strong>Keywords:</strong> {search.keywords.map(k => k.label).join(', ')}
+                    </span>
+                  </div>
+                )}
+                {search.locations.length > 0 && (
+                  <div className="flex items-center">
+                    <MapPinIcon className="h-5 w-5 text-gray-500 mr-2" />
+                    <span className="text-sm text-gray-600">
+                      <strong>Locations:</strong> {search.locations.map(l => l.label).join(', ')}
+                    </span>
+                  </div>
+                )}
+                {search.education && (
+                  <div className="flex items-center">
+                    <AcademicCapIcon className="h-5 w-5 text-gray-500 mr-2" />
+                    <span className="text-sm text-gray-600">
+                      <strong>Education:</strong> {search.education.charAt(0).toUpperCase() + search.education.slice(1)}
+                    </span>
+                  </div>
+                )}
                 <button
                   onClick={() => handleLoadRecent(search)}
-                  className="mt-2 py-1 px-2 rounded-lg bg-blue-500 text-white text-sm hover:bg-blue-600"
+                  className="mt-3 py-2 px-4 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-200"
                 >
-                  Load
+                  Apply Search
                 </button>
               </div>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-gray-600">No recent searches</p>
+        <p className="text-sm text-gray-500 italic">No recent searches yet</p>
       )}
     </div>
   );
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
         recentSearchesContent={recentSearchesContent}
       />
       <div className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 overflow-auto">
-        <div className="max-w-3xl mx-auto w-full">
-          <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 sm:mb-8 text-center">
-              Find Candidates
-            </h1>
-            <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Experience Type
-                </label>
-                <div className="mt-1 flex space-x-4">
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      name="experienceType"
-                      id="fresher"
-                      value="fresher"
-                      checked={formData.experienceType === 'fresher'}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-[#02325a] focus:ring-blue-500 border-gray-300"
-                    />
-                    <label
-                      htmlFor="fresher"
-                      className="ml-2 text-sm font-medium text-gray-700"
-                    >
-                      Fresher Only
-                    </label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      name="experienceType"
-                      id="experienced"
-                      value="experienced"
-                      checked={formData.experienceType === 'experienced'}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-[#02325a] focus:ring-blue-500 border-gray-300"
-                    />
-                    <label
-                      htmlFor="experienced"
-                      className="ml-2 text-sm font-medium text-gray-700"
-                    >
-                      Experienced
-                    </label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      name="experienceType"
-                      id="any"
-                      value="any"
-                      checked={formData.experienceType === 'any'}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-[#02325a] focus:ring-blue-500 border-gray-300"
-                    />
-                    <label
-                      htmlFor="any"
-                      className="ml-2 text-sm font-medium text-gray-700"
-                    >
-                      Any
-                    </label>
+        <div className="flex flex-col lg:flex-row gap-6 max-w-5xl mx-auto w-full">
+          <div className="flex-1">
+            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6 sm:mb-8 text-center">
+                Find Top Candidates
+              </h1>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Experience Type
+                  </label>
+                  <div className="flex flex-col sm:flex-row sm:space-x-6 space-y-3 sm:space-y-0">
+                    {['fresher', 'experienced', 'any'].map((type) => (
+                      <div key={type} className="flex items-center">
+                        <input
+                          type="radio"
+                          name="experienceType"
+                          id={type}
+                          value={type}
+                          checked={formData.experienceType === type}
+                          onChange={handleInputChange}
+                          className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                        />
+                        <label
+                          htmlFor={type}
+                          className="ml-2 text-sm font-medium text-gray-700 capitalize"
+                        >
+                          {type}
+                        </label>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
-              <div>
-                <label
-                  htmlFor="keywords"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Keywords (up to 10, type and add with comma or enter)
-                </label>
-                <AsyncCreatableSelect
-                  isMulti
-                  name="keywords"
-                  value={formData.keywords}
-                  onChange={handleKeywordChange}
-                  onInputChange={handleKeywordInputChange}
-                  inputValue={keywordInput}
-                  className="mt-1"
-                  classNamePrefix="select"
-                  placeholder="Select or type keywords..."
-                  maxMenuHeight={200}
-                  isClearable
-                  isSearchable
-                  loadOptions={loadKeywordOptions}
-                  formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
-                />
-              </div>
-              {formData.experienceType !== 'fresher' && (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label
-                        htmlFor="minExperience"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Minimum Experience
-                      </label>
-                      <select
-                        name="minExperience"
-                        id="minExperience"
-                        value={formData.minExperience}
-                        onChange={handleInputChange}
-                        className="mt-1 w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                      >
-                        <option value="">Select Min Experience</option>
-                        {experienceOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                <div>
+                  <label
+                    htmlFor="keywords"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Keywords (up to 10, type and add with comma or enter)
+                  </label>
+                  <AsyncCreatableSelect
+                    isMulti
+                    name="keywords"
+                    value={formData.keywords}
+                    onChange={handleKeywordChange}
+                    onInputChange={handleKeywordInputChange}
+                    inputValue={keywordInput}
+                    className="mt-1 text-sm"
+                    classNamePrefix="select"
+                    placeholder="e.g., JavaScript, Python..."
+                    maxMenuHeight={200}
+                    isClearable
+                    isSearchable
+                    loadOptions={loadKeywordOptions}
+                    formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        borderColor: '#d1d5db',
+                        boxShadow: 'none',
+                        '&:hover': { borderColor: '#4f46e5' },
+                      }),
+                      multiValue: (base) => ({
+                        ...base,
+                        backgroundColor: '#e0e7ff',
+                        color: '#4f46e5',
+                      }),
+                      multiValueLabel: (base) => ({
+                        ...base,
+                        color: '#4f46e5',
+                      }),
+                    }}
+                  />
+                </div>
+                {formData.experienceType !== 'fresher' && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label
+                          htmlFor="minExperience"
+                          className="block text-sm font-medium text-gray-700 mb-2"
+                        >
+                          Minimum Experience
+                        </label>
+                        <select
+                          name="minExperience"
+                          id="minExperience"
+                          value={formData.minExperience}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 text-sm"
+                        >
+                          <option value="">Select Min Experience</option>
+                          {experienceOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="maxExperience"
+                          className="block text-sm font-medium text-gray-700 mb-2"
+                        >
+                          Maximum Experience
+                        </label>
+                        <select
+                          name="maxExperience"
+                          id="maxExperience"
+                          value={formData.maxExperience}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 text-sm"
+                        >
+                          <option value="">Select Max Experience</option>
+                          {getMaxExperienceOptions().map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
-                    <div>
-                      <label
-                        htmlFor="maxExperience"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Maximum Experience
-                      </label>
-                      <select
-                        name="maxExperience"
-                        id="maxExperience"
-                        value={formData.maxExperience}
-                        onChange={handleInputChange}
-                        className="mt-1 w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                      >
-                        <option value="">Select Max Experience</option>
-                        {getMaxExperienceOptions().map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label
+                          htmlFor="minSalary"
+                          className="block text-sm font-medium text-gray-700 mb-2"
+                        >
+                          Minimum Monthly Salary (INR)
+                        </label>
+                        <input
+                          type="text"
+                          name="minSalary"
+                          id="minSalary"
+                          value={formatINR(formData.minSalary)}
+                          onChange={(e) =>
+                            handleInputChange({
+                              target: { name: 'minSalary', value: parseINR(e.target.value) },
+                            })
+                          }
+                          placeholder="e.g., 30,000"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="maxSalary"
+                          className="block text-sm font-medium text-gray-700 mb-2"
+                        >
+                          Maximum Monthly Salary (INR)
+                        </label>
+                        <input
+                          type="text"
+                          name="maxSalary"
+                          id="maxSalary"
+                          value={formatINR(formData.maxSalary)}
+                          onChange={(e) =>
+                            handleInputChange({
+                              target: { name: 'maxSalary', value: parseINR(e.target.value) },
+                            })
+                          }
+                          placeholder="e.g., 1,00,000"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 text-sm"
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label
-                        htmlFor="minSalary"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Minimum Monthly Salary (INR)
-                      </label>
-                      <input
-                        type="text"
-                        name="minSalary"
-                        id="minSalary"
-                        value={formatINR(formData.minSalary)}
-                        onChange={(e) =>
-                          handleInputChange({
-                            target: { name: 'minSalary', value: parseINR(e.target.value) },
-                          })
-                        }
-                        placeholder="e.g., 30,000"
-                        className="mt-1 w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="maxSalary"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Maximum Monthly Salary (INR)
-                      </label>
-                      <input
-                        type="text"
-                        name="maxSalary"
-                        id="maxSalary"
-                        value={formatINR(formData.maxSalary)}
-                        onChange={(e) =>
-                          handleInputChange({
-                            target: { name: 'maxSalary', value: parseINR(e.target.value) },
-                          })
-                        }
-                        placeholder="e.g., 1,00,000"
-                        className="mt-1 w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-              <div>
-                <label
-                  htmlFor="locations"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Locations (up to 3, type and add with comma or enter)
-                </label>
-                <AsyncCreatableSelect
-                  isMulti
-                  name="locations"
-                  value={formData.locations}
-                  onChange={handleLocationChange}
-                  onInputChange={handleLocationInputChange}
-                  inputValue={locationInput}
-                  className="mt-1"
-                  classNamePrefix="select"
-                  placeholder="Select or type locations..."
-                  maxMenuHeight={200}
-                  isClearable
-                  isSearchable
-                  loadOptions={loadLocationOptions}
-                  formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="education"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Minimum Education
-                </label>
-                <select
-                  name="education"
-                  id="education"
-                  value={formData.education}
-                  onChange={handleInputChange}
-                  className="mt-1 w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                >
-
-                   <option value="">Select Minimum Education</option>
-
-                  <option value="any">Any</option>
-                  <option value="graduate">Graduate</option>
-                  <option value="post-graduate">Post Graduate</option>
-                  <option value="others">Others</option>
-                </select>
-              </div>
-              <div>
-                <label
-                  htmlFor="active"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Last Active
-                </label>
-                <select
-                  name="active"
-                  id="active"
-                  value={formData.active}
-                  onChange={handleInputChange}
-                  className="mt-1 w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                >
-                  <option value="">Select Active Period</option>
-                  <option value="3-days">Last 3 Days</option>
-                  <option value="7-days">Last 7 Days</option>
-                  <option value="15-days">Last 15 Days</option>
-                  <option value="1-month">Last 1 Month</option>
-                  <option value="3-months">Last 3 Months</option>
-                  <option value="7-months">Last 7 Months</option>
-                  <option value="1-year">Last 1 Year</option>
-                </select>
-              </div>
-              <div>
-                <button
-                  type="submit"
-                  className="w-full py-2 sm:py-3 px-4 rounded-lg bg-[#02325a] text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200"
-                >
-                  Search Candidates
-                </button>
-              </div>
-            </form>
+                  </>
+                )}
+                <div>
+                  <label
+                    htmlFor="locations"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Locations (up to 3, type and add with comma or enter)
+                  </label>
+                  <AsyncCreatableSelect
+                    isMulti
+                    name="locations"
+                    value={formData.locations}
+                    onChange={handleLocationChange}
+                    onInputChange={handleLocationInputChange}
+                    inputValue={locationInput}
+                    className="mt-1 text-sm"
+                    classNamePrefix="select"
+                    placeholder="e.g., Mumbai, Delhi..."
+                    maxMenuHeight={200}
+                    isClearable
+                    isSearchable
+                    loadOptions={loadLocationOptions}
+                    formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        borderColor: '#d1d5db',
+                        boxShadow: 'none',
+                        '&:hover': { borderColor: '#4f46e5' },
+                      }),
+                      multiValue: (base) => ({
+                        ...base,
+                        backgroundColor: '#e0e7ff',
+                        color: '#4f46e5',
+                      }),
+                      multiValueLabel: (base) => ({
+                        ...base,
+                        color: '#4f46e5',
+                      }),
+                    }}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="education"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Minimum Education
+                  </label>
+                  <select
+                    name="education"
+                    id="education"
+                    value={formData.education}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 text-sm"
+                  >
+                    <option value="">Select Minimum Education</option>
+                    <option value="any">Any</option>
+                    <option value="under-graduate">Under Graduate</option>
+                    <option value="graduate"> Graduate</option>
+                    <option value="post-graduate">Post Graduate</option>
+                    <option value="others">Others</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    htmlFor="active"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Last Active
+                  </label>
+                  <select
+                    name="active"
+                    id="active"
+                    value={formData.active}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 text-sm"
+                  >
+                    <option value="">Select Active Period</option>
+                    <option value="3-days">Last 3 Days</option>
+                    <option value="7-days">Last 7 Days</option>
+                    <option value="15-days">Last 15 Days</option>
+                    <option value="1-month">Last 1 Month</option>
+                    <option value="3-months">Last 3 Months</option>
+                    <option value="7-months">Last 7 Months</option>
+                    <option value="1-year">Last 1 Year</option>
+                  </select>
+                </div>
+                <div>
+                  <button
+                    type="submit"
+                    className="w-full py-3 px-4 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-200"
+                  >
+                    Search Candidates
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+          <div className="w-full lg:w-80 xl:w-96">
+            {recentSearchesContent}
           </div>
         </div>
       </div>

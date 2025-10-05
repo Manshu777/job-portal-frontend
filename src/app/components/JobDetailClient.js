@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   MapPin,
@@ -13,13 +13,43 @@ import {
   Heart,
   Share2,
 } from 'lucide-react';
+import axios from 'axios';
+import Swal from 'sweetalert2';
 
 export default function JobDetailClient({ job: response }) {
   const router = useRouter();
   const [isSaved, setIsSaved] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
 
   // Extract job and formatted from response
   const { job, formatted } = response;
+
+  useEffect(() => {
+    const fetchAppliedJobs = async () => {
+      try {
+        const response = await axios.get('http://127.0.0.1:8000/api/v1/job-applications', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('port_tok')}`,
+          },
+        });
+        if (response.data.success) {
+          setHasApplied(response.data.appliedJobIds.includes(job.id));
+        }
+      } catch (error) {
+        console.error('Error fetching applied jobs:', error);
+        // Swal.fire({
+        //   icon: 'error',
+        //   title: 'Error',
+        //   text: 'Failed to load application status. Please try again.',
+        // });
+      }
+    };
+
+    if (job?.id) {
+      fetchAppliedJobs();
+    }
+  }, [job?.id]);
 
   if (!job || !formatted) {
     return (
@@ -44,8 +74,40 @@ export default function JobDetailClient({ job: response }) {
   // Use formatted salary from backend
   const salary = `${formatted['Job Details']['Min Salary']} - ${formatted['Job Details']['Max Salary']} ${formatted['Job Details']['Pay Type']}`;
 
-  const handleApply = () => {
-    router.push(`/job/${job.slug}/apply`);
+  const handleApply = async () => {
+    if (hasApplied) return;
+
+    setIsApplying(true);
+
+    try {
+      const response = await axios.post(
+        'http://127.0.0.1:8000/api/v1/job-applications',
+        { job_posting_id: job.id },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('port_tok')}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      if (response.status === 201) {
+        setHasApplied(true);
+        Swal.fire({
+          icon: 'success',
+          title: 'Success',
+          text: 'Successfully applied for the job!',
+        });
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || 'Failed to apply for the job';
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: errorMessage,
+      });
+    } finally {
+      setIsApplying(false);
+    }
   };
 
   return (
@@ -180,11 +242,18 @@ export default function JobDetailClient({ job: response }) {
             <div className="bg-white rounded-lg shadow-md mb-6 sticky top-4 p-6">
               <button
                 onClick={handleApply}
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium mb-4"
+                disabled={hasApplied || isApplying}
+                className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-colors ${
+                  hasApplied
+                    ? 'bg-green-600 cursor-not-allowed'
+                    : isApplying
+                    ? 'bg-blue-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
               >
-                Apply Now
+                {hasApplied ? 'Applied' : isApplying ? 'Applying...' : 'Apply Now'}
               </button>
-              <div className="text-center text-sm text-gray-600">
+              <div className="text-center text-sm text-gray-600 mt-2">
                 Quick apply with your profile
               </div>
               <div className="flex justify-center gap-4 mt-4">
@@ -205,8 +274,6 @@ export default function JobDetailClient({ job: response }) {
               <h2 className="text-lg font-semibold mb-4">Company Information</h2>
               <p><strong>Name:</strong> {formatted['About Company']['Name'] || 'N/A'}</p>
               <p><strong>Address:</strong> {formatted['About Company']['Address'] || 'N/A'}</p>
-              {/* <p><strong>Contact Email:</strong> {formatted['About Company']['Contact Email'] || 'N/A'}</p>
-              <p><strong>Contact Phone:</strong> {formatted['About Company']['Contact Phone'] || 'N/A'}</p> */}
             </div>
           </div>
         </div>

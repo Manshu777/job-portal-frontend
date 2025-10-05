@@ -138,7 +138,7 @@ const MyJobs = () => {
 
   // Render the full dashboard if verified
   return (
-    <div className="flex bg-gray-100">
+    <div className="flex h-screen  bg-gradient-to-br from-blue-50 to-gray-100">
       <Sidebar
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}

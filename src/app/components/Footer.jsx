@@ -1,13 +1,25 @@
-
 'use client'
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { FaFacebook, FaTwitter, FaLinkedin, FaInstagram, FaGithub } from "react-icons/fa";
 import Chatbot1 from "./Chatbot1";
 
 const Footer = () => {
+  const pathname = usePathname();
   const [isNewsletterSubmitted, setIsNewsletterSubmitted] = useState(false);
- 
   const [email, setEmail] = useState("");
+  const [showFooter, setShowFooter] = useState(true);
+
+  // Hide footer for employer pages
+  useEffect(() => {
+    if (pathname.startsWith("/employer")) {
+      setShowFooter(false);
+    } else {
+      setShowFooter(true);
+    }
+  }, [pathname]);
+
+  if (!showFooter) return null;
 
   const handleNewsletterSubmit = (e) => {
     e.preventDefault();
@@ -32,33 +44,32 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gray-50 border-t border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+    <footer className="relative bg-[#f0f8ff] text-black pt-16 pb-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Logo Section */}
-          <div className="flex flex-col items-start">
-            <div className="relative w-[150px] h-[50px]">
-              <img
-                src="https://images.unsplash.com/photo-1563906267088-b029e7101114"
-                alt="Company Logo"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <p className="mt-4 text-gray-600 text-sm">
-              Building the future of digital experiences.
+          <div>
+             <img className="h-[80px]" src="/img/logo-rm-boat.png" />
+              <span className="text-2xl ml-2 uppercase leading-1">
+                Hiring Boat
+              </span>
+            <p className="text-black text-sm leading-relaxed">
+              Empowering digital growth through technology and innovation.
             </p>
           </div>
 
           {/* Navigation Links */}
           {Object.entries(navigationLinks).map(([category, links]) => (
             <div key={category}>
-              <h3 className="text-gray-900 font-semibold mb-4">{category}</h3>
+              <h3 className="text-lg font-semibold mb-4 text-black border-b border-blue-400 pb-2 w-fit">
+                {category}
+              </h3>
               <ul className="space-y-2">
                 {links.map((link) => (
                   <li key={link}>
                     <a
                       href="#"
-                      className="text-gray-600 hover:text-[#02325a] transition-colors duration-200"
+                      className="text-black hover:text-black transition-colors duration-200"
                     >
                       {link}
                     </a>
@@ -68,25 +79,27 @@ const Footer = () => {
             </div>
           ))}
 
-          {/* Newsletter Section */}
-          <div className="lg:col-span-1">
-            <h3 className="text-gray-900 font-semibold mb-4">Stay Updated</h3>
+          {/* Newsletter */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-black border-b border-blue-400 pb-2 w-fit">
+              Stay Updated
+            </h3>
             {isNewsletterSubmitted ? (
-              <p className="text-[#00223f]">Thank you for subscribing!</p>
+              <p className="text-green-300 font-medium">Thanks for subscribing! 🎉</p>
             ) : (
-              <form onSubmit={handleNewsletterSubmit} className="mt-2">
+              <form onSubmit={handleNewsletterSubmit} className="mt-3">
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Your email"
+                    className="px-4 py-2 rounded-md w-full text-gray-900 focus:ring-2 focus:ring-blue-400 outline-none"
                     required
                   />
                   <button
                     type="submit"
-                    className="bg-[#02325a] text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200"
+                    className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md font-medium transition"
                   >
                     Subscribe
                   </button>
@@ -96,35 +109,32 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Social Links */}
-        <div className="mt-12 pt-8 border-t border-gray-200">
-          <div className="flex flex-col sm:flex-row items-center justify-between">
-            <div className="flex space-x-6 mb-4 sm:mb-0">
-              {socialLinks.map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  aria-label={social.label}
-                  className="text-gray-600 hover:text-[#02325a] transition-colors duration-200"
-                >
-                  <social.icon className="w-6 h-6" />
-                </a>
-              ))}
-            </div>
+        {/* Bottom Section */}
+        <div className="mt-12 border-t border-blue-400 pt-6 flex flex-col sm:flex-row justify-between items-center">
+          {/* Social Links */}
+          <div className="flex space-x-5 mb-4 sm:mb-0">
+            {socialLinks.map((social) => (
+              <a
+                key={social.label}
+                href={social.href}
+                aria-label={social.label}
+                className="p-2  rounded-full  transition"
+              >
+                <social.icon className="w-5 h-5 text-black" />
+              </a>
+            ))}
+          </div>
 
-            {/* Copyright */}
-            <div className="text-gray-600 text-sm">
-              © {currentYear} Your Company. All rights reserved.
-              <div className="flex space-x-4 mt-2 sm:mt-0 sm:inline-block sm:ml-4">
-                <a href="#" className="hover:text-[#02325a] transition-colors duration-200">Privacy Policy</a>
-                <span className="hidden sm:inline">·</span>
-                <a href="#" className="hover:text-[#02325a] transition-colors duration-200">Terms of Service</a>
-              </div>
-            </div>
+          {/* Copyright */}
+          <div className="text-black text-sm text-center sm:text-right">
+            © {currentYear} Your Company. All rights reserved.{" "}
+            <a href="#" className="hover:text-black ml-2">Privacy Policy</a> |
+            <a href="#" className="hover:text-black ml-2">Terms</a>
           </div>
         </div>
       </div>
 
+      {/* Chatbot */}
       <Chatbot1 />
     </footer>
   );
