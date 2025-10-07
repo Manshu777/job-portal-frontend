@@ -141,7 +141,7 @@ const EditEmployerProfile = () => {
     <div className="flex bg-gradient-to-br from-blue-50 to-gray-100">
          <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}  />
       <div className="flex-1 p-6 md:p-8 lg:p-12">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-2xl mx-auto">
           <div className="bg-white shadow-2xl rounded-xl p-8 mb-8">
             <div className="flex justify-between items-center">
               <div>
@@ -273,7 +273,7 @@ const EditEmployerProfile = () => {
                     <p className="text-red-500 text-sm mt-1">{fieldErrors.company_location[0]}</p>
                   )}
                 </div>
-                <div>
+                {/* <div>
                   <label htmlFor="contact_person" className="block text-sm font-medium text-gray-700">
                     Contact Person
                   </label>
@@ -299,7 +299,7 @@ const EditEmployerProfile = () => {
                   {fieldErrors.contact_person && (
                     <p className="text-red-500 text-sm mt-1">{fieldErrors.contact_person[0]}</p>
                   )}
-                </div>
+                </div> */}
                 <div>
                   <label htmlFor="contact_email" className="block text-sm font-medium text-gray-700">
                     Contact Email
@@ -344,7 +344,7 @@ const EditEmployerProfile = () => {
                     <p className="text-red-500 text-sm mt-1">{fieldErrors.contact_phone[0]}</p>
                   )}
                 </div>
-                <div>
+                {/* <div>
                   <label htmlFor="gst_number" className="block text-sm font-medium text-gray-700">
                     GST Number
                   </label>
@@ -370,7 +370,7 @@ const EditEmployerProfile = () => {
                   {fieldErrors.gst_number && (
                     <p className="text-red-500 text-sm mt-1">{fieldErrors.gst_number[0]}</p>
                   )}
-                </div>
+                </div> */}
                 {isEditMode && (
                   <>
                     <div>
