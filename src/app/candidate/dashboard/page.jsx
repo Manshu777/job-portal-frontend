@@ -75,7 +75,7 @@ const Dashboard = () => {
   const [newJobRole, setNewJobRole] = useState("");
   const [error, setError] = useState("");
 
-  const storageLink = 'http://127.0.0.1:8000/storage';
+  const storageLink = 'http://147.93.18.63:8001/storage';
 
   // File validation constraints
   const MAX_PROFILE_PIC_SIZE = 2 * 1024 * 1024; // 2MB
