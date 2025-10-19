@@ -80,6 +80,7 @@ const getSelectedValues = (selectedOptions) => {
   return selectedOptions.map((opt) => opt.value);
 };
 
+
 const CandidateCard = ({ candidate, onViewProfile }) => {
   const [showPhone, setShowPhone] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState(candidate.number || "xxxxxxx");
@@ -130,9 +131,7 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
   const formatExperience = () => {
     const years = candidate.experience_years || 0;
     const months = candidate.experience_months || 0;
-    return `${years} Year${years !== 1 ? "s" : ""} ${months} Month${
-      months !== 1 ? "s" : ""
-    }`;
+    return `${years} Year${years !== 1 ? "s" : ""} ${months} Month${months !== 1 ? "s" : ""}`;
   };
 
   const skills = candidate.skills
@@ -174,24 +173,32 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
   })();
 
   const isFresher = candidate.experience_level === "Fresher";
-  const experience = `${candidate.experience_years || 0} yrs ${
-    candidate.experience_months || 0
-  } mos`;
+  const experience = `${candidate.experience_years || 0} yrs ${candidate.experience_months || 0} mos`;
+  const isImmediateJoiner = candidate.notice_period && Number(candidate.notice_period) <= 30;
+  const isFluentEnglish = candidate.english_level === "Fluent";
 
   return (
     <>
       <div className="bg-white rounded-lg shadow p-5 border border-gray-200 flex flex-col gap-3 mb-6 max-w-3xl">
-        <div className="flex items-center gap-2">
-          <div
-            className={`bg-[#02325a] px-4 py-2 rounded-full text-2xl font-semibold text-white`}
-          >
-            {candidate?.full_name?.charAt(0) || "N"}
-          </div>
+        <div className="flex items-center gap-3">
+          {candidate.profile_pic ? (
+            <img
+              src={candidate.profile_pic}
+              alt={`${candidate.full_name}'s profile`}
+              className="w-12 h-12 rounded-full object-cover border-2 border-[#02325a]"
+            />
+          ) : (
+            <div
+              className="bg-[#02325a] w-12 h-12 rounded-full flex items-center justify-center text-2xl font-semibold text-white"
+            >
+              {candidate?.full_name?.charAt(0) || "N"}
+            </div>
+          )}
           <div>
             <h3 className="text-lg font-semibold text-gray-800">
               {candidate.full_name}
             </h3>
-            <div className="flex mt-1 gap-2">
+            <div className="flex mt-1 gap-2 flex-wrap">
               {!isFresher && (
                 <>
                   <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
@@ -208,6 +215,20 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
                 <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
                   <span className="bg-green-100 text-green-800 rounded-full px-3 py-1">
                     Fresher
+                  </span>
+                </div>
+              )}
+              {isImmediateJoiner && (
+                <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
+                  <span className="bg-yellow-100 text-yellow-800 rounded-full px-3 py-1">
+                    Immediate Joiner
+                  </span>
+                </div>
+              )}
+              {isFluentEnglish && (
+                <div className="text-md flex items-center gap-2 text-[#5e6c84] font-semibold">
+                  <span className="bg-blue-100 text-blue-800 rounded-full px-3 py-1">
+                    Fluent English
                   </span>
                 </div>
               )}
@@ -280,6 +301,29 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
             <span className="flex text-xl items-center text-[#02325a] gap-1">
               {candidate.degree} in {candidate.specialization},{" "}
               {candidate.college_name}
+            </span>
+          </div>
+          <div className="flex w-full gap-5 my-1">
+            <span className="text-xl flex items-center gap-2 text-gray-500">
+              <FaFileAlt className="text-[20px]" />
+              Resume
+            </span>
+            <span className="flex text-xl items-center text-[#02325a] gap-2">
+              {candidate.has_resume ? (
+                <>
+                  <a
+                    href={`${baseurl}/resume/${candidate.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    View Resume
+                  </a>
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                </>
+              ) : (
+                <span className="text-gray-400">No resume available</span>
+              )}
             </span>
           </div>
         </div>
@@ -404,6 +448,10 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
                   {candidate.experience_level || "N/A"}
                 </p>
                 <p className="text-sm text-gray-600">
+                  <strong>Notice Period:</strong>{" "}
+                  {isImmediateJoiner ? "Immediate Joiner" : candidate.notice_period || "Not specified"}
+                </p>
+                <p className="text-sm text-gray-600">
                   <strong>Job Roles:</strong>{" "}
                   {jobRoles.length > 0 ? jobRoles.join(", ") : "None"}
                 </p>
@@ -449,14 +497,17 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
                 <FaFileAlt className="text-[#02325a]" /> Resume
               </h3>
               {candidate.has_resume ? (
-                <a
-                  href={`${baseurl}/resume/${candidate.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline flex items-center gap-2 font-medium"
-                >
-                  <FaFileAlt /> View Resume
-                </a>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`${baseurl}/resume/${candidate.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline flex items-center gap-2 font-medium"
+                  >
+                    <FaFileAlt /> View Resume
+                  </a>
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                </div>
               ) : (
                 <p className="text-sm text-gray-600">No resume available</p>
               )}
@@ -575,11 +626,11 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <p className="text-sm text-gray-600">
                   <strong>English Level:</strong>{" "}
-                  {candidate.english_level || "Not specified"}
+                  {isFluentEnglish ? "Fluent" : candidate.english_level || "Not specified"}
                 </p>
                 <p className="text-sm text-gray-600">
                   <strong>Notice Period:</strong>{" "}
-                  {candidate.notice_period || "Not specified"}
+                  {isImmediateJoiner ? "Immediate Joiner" : candidate.notice_period || "Not specified"}
                 </p>
                 <p className="text-sm text-gray-600">
                   <strong>Experience Type:</strong>{" "}

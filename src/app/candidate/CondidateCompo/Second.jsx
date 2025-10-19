@@ -151,9 +151,10 @@ const Second = ({ alldata = {}, handelinputs, errors }) => {
   const schoolMediumOptions = [
     "English",
     "Hindi",
-    "Spanish",
-    "French",
-    "Other",
+    "Punjabi",
+    "Gujarati",
+    "Marathi",
+    "Other"
   ].map((medium) => ({
     value: medium,
     label: medium,

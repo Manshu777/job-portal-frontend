@@ -883,7 +883,7 @@ const fetchSpecializations = useCallback(async (courseName) => {
     setFormData((prev) => ({ ...prev, specialization: "" }));
   }, [formData.course, fetchSpecializations]);
 
-  const fetchCitySuggestions = useCallback(
+ const fetchCitySuggestions = useCallback(
     debounce(async (query) => {
       if (!query || query.length < 3) {
         setCitySuggestions([]);
@@ -891,13 +891,10 @@ const fetchSpecializations = useCallback(async (courseName) => {
       }
       setIsLoading(true);
       try {
-        const response = await axios.get(`${baseurl}/cities/search`, {
-          params: { term: query },
+        const response = await axios.get(`${baseurl}/cities/search-cities`, {
+          params: { query },
         });
-        if (
-          response.data.status === "success" &&
-          response.data.data.length > 0
-        ) {
+        if (response.data.status === "success" && response.data.data.length > 0) {
           setCitySuggestions(response.data.data);
         } else {
           setCitySuggestions([]);
@@ -914,6 +911,35 @@ const fetchSpecializations = useCallback(async (courseName) => {
     }, 500),
     []
   );
+  const fetchAreaSuggestions = useCallback(
+    debounce(async (query) => {
+      if (!formData.selectedCity || !query || query.length < 3) {
+        setAreaSuggestions([]);
+        return;
+      }
+      setIsLoading(true);
+      try {
+        const response = await axios.get(`${baseurl}/cities/search-area`, {
+          params: { city: formData.selectedCity, query },
+        });
+        if (response.data.status === "success") {
+          setAreaSuggestions(response.data.areas);
+        } else {
+          setAreaSuggestions([]);
+        }
+      } catch (error) {
+        console.error("Area search API error:", error);
+        setErrors((prev) => ({
+          ...prev,
+          locations: "Failed to fetch area suggestions",
+        }));
+      } finally {
+        setIsLoading(false);
+      }
+    }, 500),
+    [formData.selectedCity]
+  );
+
 
   const handleInputChange = (e) => {
     const { name, value, type, checked, files } = e.target;
@@ -958,20 +984,14 @@ const fetchSpecializations = useCallback(async (courseName) => {
     );
   };
 
-  const handleLocationInputChange = (value, index) => {
+ const handleLocationInputChange = (value, index) => {
     setLocationInputs((prev) => {
       const newInputs = [...prev];
       newInputs[index] = value;
       return newInputs;
     });
-    setFormData((prev) => {
-      const newLocations = [...prev.locations];
-      newLocations[index] = { address: value, lat: null, lon: null };
-      return { ...prev, locations: newLocations.filter((loc) => loc.address) };
-    });
-    fetchLocationSuggestions(value, index);
+    fetchAreaSuggestions(value); // Trigger area suggestions
   };
-
   const handleLocationSelect = (suggestion, index) => {
     setFormData((prev) => {
       const newLocations = [...prev.locations];
@@ -1481,27 +1501,7 @@ const fetchSpecializations = useCallback(async (courseName) => {
   };
 
   // Fetch areas for selected city
-  const fetchAreaSuggestions = useCallback(async (cityId) => {
-    if (!cityId) {
-      setAreaSuggestions([]);
-      return;
-    }
-    try {
-      const response = await axios.get(`${baseurl}/cities/${cityId}/locations`);
-      if (response.data.status === "success") {
-        setAreaSuggestions(response.data.data.locations);
-      } else {
-        setAreaSuggestions([]);
-      }
-    } catch (error) {
-      console.error("Area fetch API error:", error);
-      setErrors((prev) => ({
-        ...prev,
-        locations: "Failed to fetch areas for the selected city",
-      }));
-    }
-  }, []);
-
+ 
   // Handle city input change
   const handleCityInputChange = (e) => {
     const value = e.target.value;
@@ -1509,31 +1509,33 @@ const fetchSpecializations = useCallback(async (courseName) => {
     fetchCitySuggestions(value);
   };
 
+
   // Handle city selection
-  const handleCitySelect = (city) => {
+    const handleCitySelect = (city) => {
     setFormData((prev) => ({
       ...prev,
-      selectedCity: city.name,
-      city_id: city.city_id,
+      selectedCity: city.description,
+      city_id: city.place_id,
       locations: [], // Reset locations when city changes
     }));
-    setCitySearch(city.name);
+    setCitySearch(city.description);
     setCitySuggestions([]);
-    fetchAreaSuggestions(city.city_id);
+    setAreaSuggestions([]);
+    setLocationInputs([""]);
+    fetchAreaSuggestions(city.place_id);
     localStorage.setItem(
       "jobPostingFormData",
       JSON.stringify({
         data: {
           ...formData,
-          selectedCity: city.name,
-          city_id: city.city_id,
+          selectedCity: city.description,
+          city_id: city.place_id,
           locations: [],
         },
         timestamp: new Date().getTime(),
       })
     );
   };
-
   // Handle area selection
   const handleAreaSelect = (selected) => {
     const values = selected
@@ -1541,16 +1543,17 @@ const fetchSpecializations = useCallback(async (courseName) => {
           {
             city_id: formData.city_id,
             city_name: formData.selectedCity,
-            area_id: selected.id,
-            area_name: selected.area_name,
+            area_id: selected.place_id,
+            area_name: selected.description,
           },
         ]
       : [];
-
     setFormData((prev) => ({
       ...prev,
       locations: values,
     }));
+    setLocationInputs([selected ? selected.description : ""]);
+    setAreaSuggestions([]);
     localStorage.setItem(
       "jobPostingFormData",
       JSON.stringify({
@@ -1908,11 +1911,11 @@ const renderStepContent = () => {
                 <ul className="absolute w-[52%] z-10 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
                   {citySuggestions.map((city) => (
                     <li
-                      key={city.city_id}
+                      key={city.place_id}
                       onClick={() => handleCitySelect(city)}
                       className="px-4 py-2 text-sm text-gray-800 hover:bg-blue-100 cursor-pointer"
                     >
-                      {city.name}
+                      {city.description}
                     </li>
                   ))}
                 </ul>
@@ -1920,42 +1923,51 @@ const renderStepContent = () => {
             </div>
             {formData.selectedCity && (
               <div>
+            
                 <label className="block text-sm font-semibold text-gray-800">
                   Areas *
                 </label>
-                <CreatableSelect
-                  options={areaSuggestions.map((area) => ({
-                    value: area.name,
-                    label: area.name,
-                    id: area.id,
-                    area_name: area.name,
-                  }))}
-                  value={formData.locations.map((loc) => ({
-                    value: loc.area_name,
-                    label: loc.area_name,
-                  }))}
-                  onChange={handleAreaSelect}
-                  className="mt-2 text-sm"
-                  classNamePrefix="select"
-                  placeholder="Select areas..."
-                  isDisabled={!formData.selectedCity}
-                  noOptionsMessage={() =>
-                    areaSuggestions.length === 0
-                      ? "No areas available for this city"
-                      : "Type to search areas"
-                  }
+                <input
+                  type="text"
+                  value={locationInputs[0]}
+                  onChange={(e) => handleLocationInputChange(e.target.value, 0)}
+                  placeholder="Search for an area..."
+                  className={`mt-2 w-full rounded-lg border ${
+                    errors.locations ? "border-red-500" : "border-gray-300"
+                  } px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300`}
                 />
+                {isLoading && (
+                  <p className="mt-1 text-xs text-gray-500">Loading areas...</p>
+                )}
+                {errors.locations && (
+                  <p className="mt-1 text-xs text-red-500">{errors.locations}</p>
+                )}
+                {areaSuggestions.length > 0 && (
+                  <ul className="absolute w-[52%] z-10 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                    {areaSuggestions.map((area) => (
+                      <li
+                        key={area.place_id}
+                        onClick={() => handleAreaSelect(area)}
+                        className="px-4 py-2 text-sm text-gray-800 hover:bg-blue-100 cursor-pointer"
+                      >
+                        {area.description}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {formData.locations.length > 0 && (
+                  <p className="mt-2 text-sm text-gray-600">
+                    Selected: {formData.locations.map((loc) => loc.area_name).join(", ")}
+                  </p>
+                )}
+
+                         
                 {errors.locations && (
                   <p className="mt-1 text-xs text-red-500">
                     {errors.locations}
                   </p>
                 )}
-                {formData.locations.length > 0 && (
-                  <p className="mt-2 text-sm text-gray-600">
-                    Selected:{" "}
-                    {formData.locations.map((loc) => loc.area_name).join(", ")}
-                  </p>
-                )}
+                
               </div>
             )}
 
@@ -2802,14 +2814,27 @@ const renderStepContent = () => {
                 <input
                   type="text"
                   name="interviewLocation"
-                  value={formData.interviewLocation}
-                  onChange={handleInputChange}
+                  value={locationInputs[0]}
+                  onChange={(e) => handleLocationInputChange(e.target.value, 0)}
                   className={`mt-2 w-full rounded-lg border ${
                     errors.interviewLocation
                       ? "border-red-500"
                       : "border-gray-300"
                   } px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300`}
                 />
+                  {areaSuggestions.length > 0 && (
+                  <ul className="absolute w-[52%] z-10 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                    {areaSuggestions.map((area) => (
+                      <li
+                        key={area.place_id}
+                        onClick={() => handleAreaSelect(area)}
+                        className="px-4 py-2 text-sm text-gray-800 hover:bg-blue-100 cursor-pointer"
+                      >
+                        {area.description}
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 {errors.interviewLocation && (
                   <p className="mt-1 text-xs text-red-500">
                     {errors.interviewLocation}

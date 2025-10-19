@@ -19,11 +19,14 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [loginType, setLoginType] = useState("");
+  const [modalMode, setModalMode] = useState("login"); // login, forgotPassword, verifyOtp, resetPassword
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [resetToken, setResetToken] = useState("");
   const [error, setError] = useState("");
   const [useOtpLogin, setUseOtpLogin] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -248,6 +251,118 @@ export default function Navbar() {
     setLoading(false);
   };
 
+  const handleForgotPassword = async () => {
+    setLoading(true);
+    setError("");
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Please enter a valid email.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const endpoint =
+        loginType === "Employer" ? "employer/forgot-password" : "forgot-password";
+      const payload =
+        loginType === "Employer" ? { contact_email: email } : { email };
+      const response = await axios.post(`${baseurl}/${endpoint}`, payload);
+      if (response.data.success) {
+        setOtpSent(true);
+        setModalMode("verifyOtp");
+      } else {
+        setError(response.data.message || "Failed to send OTP. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error sending forgot password OTP:", error);
+      setError("Failed to send OTP. Please try again.");
+    }
+    setLoading(false);
+  };
+
+  const handleVerifyResetOtp = async () => {
+    setLoading(true);
+    setError("");
+
+    if (otp.length !== 6) {
+      setError("Please enter a 6-digit OTP.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const endpoint =
+        loginType === "Employer"
+          ? "employer/verify-password-reset-otp"
+          : "verify-password-reset-otp";
+      const payload =
+        loginType === "Employer"
+          ? { contact_email: email, otp }
+          : { email, otp };
+      const response = await axios.post(`${baseurl}/${endpoint}`, payload);
+      if (response.data.success) {
+        setResetToken(response.data.reset_token);
+        setModalMode("resetPassword");
+      } else {
+        setError(response.data.message || "Invalid OTP. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      setError("Failed to verify OTP. Please try again.");
+    }
+    setLoading(false);
+  };
+
+  const handleResetPassword = async () => {
+    setLoading(true);
+    setError("");
+
+    if (!password || !confirmPassword) {
+      setError("Both password and confirm password are required.");
+      setLoading(false);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const endpoint =
+        loginType === "Employer" ? "employer/reset-password" : "reset-password";
+      const payload =
+        loginType === "Employer"
+          ? { contact_email: email, reset_token: resetToken, password, password_confirmation: confirmPassword }
+          : { email, reset_token: resetToken, password, password_confirmation: confirmPassword };
+      const response = await axios.post(`${baseurl}/${endpoint}`, payload);
+      if (response.data.success) {
+        setShowModal(false);
+        setModalMode("login");
+        setOtpSent(false);
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
+        setOtp("");
+        setResetToken("");
+        setError("");
+        alert("Password reset successfully. Please login with your new password.");
+      } else {
+        setError(response.data.message || "Failed to reset password. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      setError("Failed to reset password. Please try again.");
+    }
+    setLoading(false);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("employerToken");
     localStorage.removeItem("port_tok");
@@ -265,14 +380,27 @@ export default function Navbar() {
     setShowCredits(false);
   };
 
+  const resetModalState = () => {
+    setShowModal(false);
+    setOtpSent(false);
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
+    setOtp("");
+    setResetToken("");
+    setError("");
+    setUseOtpLogin(false);
+    setModalMode("login");
+  };
+
   return (
     <>
       <nav className="bg-white p-4 shadow-md sticky top-0 z-50 px-[8%]">
         <div className="mx-auto flex justify-between items-center">
           <div className="text-black text-2xl font-bold">
             <Link
-              className={`flex items-center ${isLoggedIn ? "" : " "} `}
-              href={`${isLoggedIn ? (userType === "Employer" ? "/employer/dashboard" : "/candidate/dashboard") : "/"  }`}
+              className={`flex items-center ${isLoggedIn ? "" : " "}`}
+              href={isLoggedIn ? (userType === "Employer" ? "/employer/dashboard" : "/candidate/dashboard") : "/"}
             >
               <img className="h-[80px]" src="/img/logo-rm-boat.png" />
               <span className="text-2xl ml-2 uppercase leading-1">
@@ -293,10 +421,7 @@ export default function Navbar() {
                 <Link href="/job" className="text-black hover:text-gray-600">
                   Jobs
                 </Link>
-                <Link
-                  href="/contact"
-                  className="text-black hover:text-gray-600"
-                >
+                <Link href="/contact" className="text-black hover:text-gray-600">
                   Contact
                 </Link>
                 <button
@@ -342,7 +467,7 @@ export default function Navbar() {
                     {showCredits && (
                       <div className="absolute right-0 mt-3 w-72 bg-gradient-to-br from-white via-gray-50 to-gray-100 text-black rounded-2xl shadow-2xl p-6 border border-gray-200 animate-[fadeIn_0.3s_ease-in-out]">
                         <div className="flex items-center gap-3 mb-4">
-                          <FaCoins className="text-4xl text-yellow-500 " />
+                          <FaCoins className="text-4xl text-yellow-500" />
                           <h3 className="text-xl font-bold text-gray-800">
                             Your Credits
                           </h3>
@@ -370,11 +495,7 @@ export default function Navbar() {
                   </div>
                 )}
                 <Link
-                  href={
-                    userType === "Employer"
-                      ? "/employer/profile"
-                      : "/candidate/dashboard"
-                  }
+                  href={userType === "Employer" ? "/employer/profile" : "/candidate/dashboard"}
                   className="flex items-center"
                 >
                   <FaUserCircle className="text-2xl text-[#00223f] hover:text-[#004080] transition-colors duration-200" />
@@ -464,11 +585,7 @@ export default function Navbar() {
             ) : (
               <>
                 <Link
-                  href={
-                    userType === "Employer"
-                      ? "/employer/dashboard"
-                      : "/candidate/dashboard"
-                  }
+                  href={userType === "Employer" ? "/employer/dashboard" : "/candidate/dashboard"}
                   className="text-black hover:text-gray-600"
                 >
                   Dashboard
@@ -497,22 +614,20 @@ export default function Navbar() {
         <div className="fixed inset-0 bg-black/20 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full relative transform transition-all duration-300 scale-100">
             <button
-              onClick={() => {
-                setShowModal(false);
-                setOtpSent(false);
-                setEmail("");
-                setPassword("");
-                setOtp("");
-                setError("");
-                setUseOtpLogin(false);
-              }}
+              onClick={resetModalState}
               className="absolute top-4 right-4 text-gray-600 hover:text-gray-800"
               aria-label="Close modal"
             >
               <FaTimes className="w-5 h-5" />
             </button>
             <h2 className="text-2xl mb-6 font-bold text-gray-800">
-              {loginType} Login
+              {modalMode === "login"
+                ? `${loginType} Login`
+                : modalMode === "forgotPassword"
+                ? "Forgot Password"
+                : modalMode === "verifyOtp"
+                ? "Verify OTP"
+                : "Reset Password"}
             </h2>
 
             <div className="space-y-4">
@@ -524,11 +639,11 @@ export default function Navbar() {
                   placeholder="Enter your email"
                   className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   onChange={(e) => setEmail(e.target.value)}
-                  disabled={otpSent}
+                  disabled={otpSent || modalMode === "verifyOtp" || modalMode === "resetPassword"}
                 />
               </div>
 
-              {!otpSent && !useOtpLogin && (
+              {modalMode === "login" && !otpSent && !useOtpLogin && (
                 <div className="relative">
                   <RiLockPasswordFill className="absolute top-3 left-3 text-gray-400" />
                   <input
@@ -541,7 +656,7 @@ export default function Navbar() {
                 </div>
               )}
 
-              {!otpSent && (
+              {modalMode === "login" && !otpSent && (
                 <div className="flex items-center">
                   <input
                     type="checkbox"
@@ -553,7 +668,7 @@ export default function Navbar() {
                 </div>
               )}
 
-              {otpSent && (
+              {(modalMode === "verifyOtp" || (modalMode === "login" && otpSent)) && (
                 <div className="relative">
                   <FaLock className="absolute top-3 left-3 text-gray-400" />
                   <input
@@ -567,6 +682,42 @@ export default function Navbar() {
                 </div>
               )}
 
+              {modalMode === "resetPassword" && (
+                <>
+                  <div className="relative">
+                    <RiLockPasswordFill className="absolute top-3 left-3 text-gray-400" />
+                    <input
+                      type="password"
+                      value={password}
+                      placeholder="Enter new password"
+                      className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="relative">
+                    <RiLockPasswordFill className="absolute top-3 left-3 text-gray-400" />
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      placeholder="Confirm new password"
+                      className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
+              {modalMode === "login" && !otpSent && (
+                <div className="text-right">
+                  <button
+                    onClick={() => setModalMode("forgotPassword")}
+                    className="text-blue-500 hover:underline text-sm"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+              )}
+
               {error && <p className="text-red-500 text-sm">{error}</p>}
 
               <p className="text-gray-500 text-sm">
@@ -577,21 +728,12 @@ export default function Navbar() {
                 and{" "}
                 <a href="/privacy" className="text-blue-500 hover:underline">
                   Privacy Policy
-                </a>
-                .
+                </a>.
               </p>
 
               <div className="flex justify-end space-x-3">
                 <button
-                  onClick={() => {
-                    setShowModal(false);
-                    setOtpSent(false);
-                    setEmail("");
-                    setPassword("");
-                    setOtp("");
-                    setError("");
-                    setUseOtpLogin(false);
-                  }}
+                  onClick={resetModalState}
                   className="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
                 >
                   Cancel
@@ -599,7 +741,13 @@ export default function Navbar() {
                 <button
                   className="flex items-center bg-[#02325a] text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
                   onClick={
-                    otpSent
+                    modalMode === "forgotPassword"
+                      ? handleForgotPassword
+                      : modalMode === "verifyOtp"
+                      ? handleVerifyResetOtp
+                      : modalMode === "resetPassword"
+                      ? handleResetPassword
+                      : otpSent
                       ? handleSendOtp
                       : useOtpLogin
                       ? handleOtp
@@ -612,6 +760,12 @@ export default function Navbar() {
                   {loading && <FaSpinner className="animate-spin mr-2" />}
                   {loading
                     ? "Processing..."
+                    : modalMode === "forgotPassword"
+                    ? "Send OTP"
+                    : modalMode === "verifyOtp"
+                    ? "Verify OTP"
+                    : modalMode === "resetPassword"
+                    ? "Reset Password"
                     : otpSent
                     ? "Verify OTP"
                     : useOtpLogin
