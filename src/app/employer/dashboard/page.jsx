@@ -78,7 +78,6 @@ const EmployerDashboard = () => {
         console.log("Fetching jobs for employer ID:", response);
 
         if (response.data.status === "success") {
-          // Fetch dashboard data for each job to get matches and applications
           const jobsWithDetails = await Promise.all(
             response.data.data.map(async (job) => {
               try {
@@ -93,8 +92,8 @@ const EmployerDashboard = () => {
                 if (dashboardResponse.data.status === "success") {
                   return {
                     ...job,
-                    matches: dashboardResponse.data.data.matches.length,
-                    applications: dashboardResponse.data.data.applications.length,
+                    matches: dashboardResponse.data.data.matches,
+                    applications: dashboardResponse.data.data.applications,
                   };
                 }
                 return job;
@@ -331,7 +330,7 @@ const EmployerDashboard = () => {
   }
 
   return (
-    <div className="flex  bg-gradient-to-br from-blue-50 to-gray-100">
+    <div className="flex bg-gradient-to-br from-blue-50 to-gray-100">
       <Sidebar
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
@@ -577,6 +576,14 @@ const NewJobCard = ({ job, setJobs }) => {
     }
   };
 
+  const handleViewMatches = () => {
+    router.push(`/employer/candidates/${job.id}`);
+  };
+
+  const handleViewApplications = () => {
+    router.push(`/employer/job/${job.id}/applications`);
+  };
+
   return (
     <div className="w-full flex bg-white shadow-lg px-5 py-6 rounded-md">
       <div className="w-full flex">
@@ -596,7 +603,11 @@ const NewJobCard = ({ job, setJobs }) => {
             </span>
           </h3>
           <div className="flex my-1 text-md gap-2 text-slate-500">
-            <span>{job.location}</span>
+            <span>
+              {job.location.length > 20
+                ? `${job.location.slice(0, 20)}...`
+                : job.location}
+            </span>
             <span className="relative simple-line">
               Posted on: {postedDate}
             </span>
@@ -604,12 +615,24 @@ const NewJobCard = ({ job, setJobs }) => {
           </div>
         </div>
         <div className="w-[15%] flex flex-col justify-start">
-          <strong>{job?.matches || 0}</strong>
+          <strong>{job?.matches?.length || 0}</strong>
           <span className="text-md text-slate-600">Database Matches</span>
+          <button
+            onClick={handleViewMatches}
+            className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+          >
+            View Matches
+          </button>
         </div>
         <div className="w-[15%] flex flex-col justify-start">
-          <strong>{job?.applications || 0}</strong>
+          <strong>{job?.applications?.length || 0}</strong>
           <span className="text-md text-slate-600">Applications</span>
+          <button
+            onClick={handleViewApplications}
+            className="mt-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+          >
+            View Applications
+          </button>
         </div>
         <div className="w-[20%] flex justify-end items-center">
           <Menu as="div" className="relative">
@@ -629,7 +652,7 @@ const NewJobCard = ({ job, setJobs }) => {
                   </button>
                 )}
               </MenuItem>
-              {/* <MenuItem>
+              <MenuItem>
                 {({ active }) => (
                   <button
                     onClick={handleEditJob}
@@ -640,7 +663,7 @@ const NewJobCard = ({ job, setJobs }) => {
                     Edit Job
                   </button>
                 )}
-              </MenuItem> */}
+              </MenuItem>
               <MenuItem>
                 {({ active }) => (
                   <button

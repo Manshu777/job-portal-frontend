@@ -28,7 +28,7 @@ export default function JobDetailClient({ job: response }) {
   useEffect(() => {
     const fetchAppliedJobs = async () => {
       try {
-        const response = await axios.get('http://147.93.18.63:8001/api/v1/job-applications', {
+        const response = await axios.get('http://147.93.18.63:8000/api/v1/job-applications', {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('port_tok')}`,
           },
@@ -81,7 +81,7 @@ export default function JobDetailClient({ job: response }) {
 
     try {
       const response = await axios.post(
-        'http://147.93.18.63:8001/api/v1/job-applications',
+        'http://147.93.18.63:8000/api/v1/job-applications',
         { job_posting_id: job.id },
         {
           headers: {
@@ -189,7 +189,7 @@ export default function JobDetailClient({ job: response }) {
               {formatted['Requirements']['Additional Requirements']?.length > 0 && (
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold mb-2">Additional Requirements</h2>
-                  <ul className="list-disc pl-5 text-gray-700">
+                  <ul className="list-disc grid grid-cols-1 lg:grid-cols-3 sm:grid-cols-2  pl-5 text-gray-700">
                     {formatted['Requirements']['Additional Requirements'].map((req, index) => (
                       <li key={index}>{req}</li>
                     ))}
