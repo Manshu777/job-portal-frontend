@@ -189,7 +189,7 @@ export default function JobDetailClient({ job: response }) {
               {formatted['Requirements']['Additional Requirements']?.length > 0 && (
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold mb-2">Additional Requirements</h2>
-                  <ul className="list-disc pl-5 text-gray-700">
+                  <ul className="list-disc grid grid-cols-1 lg:grid-cols-3 sm:grid-cols-2  pl-5 text-gray-700">
                     {formatted['Requirements']['Additional Requirements'].map((req, index) => (
                       <li key={index}>{req}</li>
                     ))}

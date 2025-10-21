@@ -534,12 +534,13 @@ quillRef.current.clipboard.dangerouslyPasteHTML(generatedText);
     totalExperienceRequired: "",
   });
   const [educationLevels, setEducationLevels] = useState([
-    { value: "Graduated", label: "Graduated" },
-    { value: "Graduate Not Required", label: "Graduate Not Required" },
-    { value: "Masters", label: "Masters" },
-    { value: "ITI", label: "ITI" },
-    { value: "Diploma", label: "Diploma" },
-  ]);
+  { value: "Any", label: "Any" },
+  { value: "Graduated", label: "Graduated" },
+  { value: "Graduate Not Required", label: "Graduate Not Required" },
+  { value: "Masters", label: "Masters" },
+  { value: "ITI", label: "ITI" },
+  { value: "Diploma", label: "Diploma" },
+]);
   const [errors, setErrors] = useState({});
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [apiError, setApiError] = useState(null);
@@ -1149,13 +1150,13 @@ const fetchSpecializations = useCallback(async (courseName) => {
         }
         // if (!formData.interviewTime) "Interview Time Is Required ";
         // if (!formData.interviewDate) "Interview Date Is Required ";
-        if (
-          formData.interviewMode !== "Online" &&
-          !formData.interviewLocation
-        ) {
-          newErrors.interviewLocation =
-            "Interview location is required for Walk-in or Hybrid mode";
-        }
+        // if (
+        //   formData.interviewMode !== "Online" &&
+        //   !formData.interviewLocation
+        // ) {
+        //   newErrors.interviewLocation =
+        //     "Interview location is required for Walk-in or Hybrid mode";
+        // }
         break;
       default:
         break;
@@ -2145,266 +2146,267 @@ const renderStepContent = () => {
             transition={{ duration: 0.3 }}
             className="space-y-6"
           >
+            
             <div>
-              <label className="block text-sm font-semibold text-gray-800">
-                Education Level *
-              </label>
-              <select
-                name="educationLevel"
-                value={formData.educationLevel}
-                onChange={handleInputChange}
-                className={`mt-2 w-full rounded-lg border ${
-                  errors.educationLevel ? "border-red-500" : "border-gray-300"
-                } px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300`}
-              >
-                <option value="">Select Education Level</option>
-                {isLoadingCourses ? (
-                  <option disabled>Loading...</option>
-                ) : (
-                  educationLevels.map((level) => (
-                    <option key={level.value} value={level.value}>
-                      {level.label}
-                    </option>
-                  ))
-                )}
-              </select>
-              {errors.educationLevel && (
-                <p className="mt-1 text-xs text-red-500">
-                  {errors.educationLevel}
-                </p>
-              )}
-              {apiErrorCourses && (
-                <p className="mt-1 text-xs text-red-500">{apiErrorCourses}</p>
-              )}
-            </div>
+  <label className="block text-sm font-semibold text-gray-800">
+    Education Level *
+  </label>
+  <select
+    name="educationLevel"
+    value={formData.educationLevel}
+    onChange={handleInputChange}
+    className={`mt-2 w-full rounded-lg border ${
+      errors.educationLevel ? "border-red-500" : "border-gray-300"
+    } px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300`}
+  >
+    <option value="">Select Education Level</option>
+    {isLoadingCourses ? (
+      <option disabled>Loading...</option>
+    ) : (
+      educationLevels.map((level) => (
+        <option key={level.value} value={level.value}>
+          {level.label}
+        </option>
+      ))
+    )}
+  </select>
+  {errors.educationLevel && (
+    <p className="mt-1 text-xs text-red-500">
+      {errors.educationLevel}
+    </p>
+  )}
+  {apiErrorCourses && (
+    <p className="mt-1 text-xs text-red-500">{apiErrorCourses}</p>
+  )}
+</div>
 
-            {["Graduated", "Masters", "ITI", "Diploma", "others"].includes(
-              formData.educationLevel
-            ) && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-4"
-              >
-                <div>
-                  <label className="block text-sm font-semibold text-gray-800">
-                    Course *
-                  </label>
-                  <CreatableSelect
-                    name="course"
-                    options={courses}
-                    className="mt-2 text-sm"
-                    classNamePrefix="select"
-                    value={
-                      formData.course
-                        ? courses.find(
-                            (option) => option.label === formData.course
-                          ) || {
-                            label: formData.course,
-                            value: formData.course,
-                          } // Handle custom course
-                        : null
-                    }
-                    onChange={(selected) => {
-                      const courseName = selected ? selected.label : "";
-                      setFormData((prev) => ({
-                        ...prev,
-                        course: courseName,
-                        specialization: "",
-                      }));
-                      localStorage.setItem(
-                        "jobPostingFormData",
-                        JSON.stringify({
-                          data: {
-                            ...formData,
-                            course: courseName,
-                            specialization: "",
-                          },
-                          timestamp: new Date().getTime(),
-                        })
-                      );
-                    }}
-                    onCreateOption={(inputValue) => {
-                      const newCourse = inputValue.trim();
-                      if (newCourse) {
-                        const newOption = {
-                          value: newCourse,
-                          label: newCourse,
-                        };
-                        setCourses((prev) => [...prev, newOption]);
-                        setFormData((prev) => ({
-                          ...prev,
-                          course: newCourse,
-                          specialization: "",
-                        }));
-                        localStorage.setItem(
-                          "jobPostingFormData",
-                          JSON.stringify({
-                            data: {
-                              ...formData,
-                              course: newCourse,
-                              specialization: "",
-                            },
-                            timestamp: new Date().getTime(),
-                          })
-                        );
-                      }
-                    }}
-                    placeholder="Search or select a course..."
-                    isClearable
-                    isSearchable
-                    isDisabled={!formData.educationLevel || isLoadingCourses}
-                    noOptionsMessage={() =>
-                      isLoadingCourses
-                        ? "Loading courses..."
-                        : "No courses available"
-                    }
-                    styles={{
-                      control: (base, state) => ({
-                        ...base,
-                        borderColor: errors.course
-                          ? "#ef4444" // Tailwind red-500
-                          : state.isFocused
-                          ? "#3b82f6" // Tailwind blue-500
-                          : "#d1d5db", // Tailwind gray-300
-                        borderWidth: "1px",
-                        borderRadius: "0.5rem", // Tailwind rounded-lg
-                        padding: "0.5rem 0.75rem", // Match px-4 py-3
-                        boxShadow: state.isFocused
-                          ? "0 0 0 2px #3b82f6"
-                          : "none", // focus:ring-2
-                        "&:hover": {
-                          borderColor: errors.course
-                            ? "#ef4444"
-                            : state.isFocused
-                            ? "#3b82f6"
-                            : "#d1d5db",
-                        },
-                        transition: "all 300ms",
-                      }),
-                      input: (base) => ({
-                        ...base,
-                        fontSize: "0.875rem", // Tailwind text-sm
-                      }),
-                      menu: (base) => ({
-                        ...base,
-                        fontSize: "0.875rem", // Tailwind text-sm
-                      }),
-                    }}
-                  />
-                  {errors.course && (
-                    <p className="mt-1 text-xs text-red-500">{errors.course}</p>
-                  )}
-                </div>
-               { console.log("Selected Course:", formData.course)}
-                {formData.course !== "Any" && formData.course !== ""   ? (
-                  <div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-800">
-                        Specialization *
-                      </label>
-                      <CreatableSelect
-                        name="specialization"
-                        options={specializations}
-                        className={`mt-2 text-sm ${
-                          errors.specialization ? "border-red-500" : ""
-                        }`}
-                        classNamePrefix="select"
-                        value={
-                          formData.specialization
-                            ? specializations.find(
-                                (spec) => spec.value === formData.specialization
-                              ) || {
-                                label: formData.specialization,
-                                value: formData.specialization,
-                              }
-                            : null
-                        }
-                        onChange={(selected) => {
-                          const value = selected ? selected.value : "";
-                          handleInputChange({
-                            target: { name: "specialization", value },
-                          });
-                        }}
-                        onCreateOption={(inputValue) => {
-                          const newOption = {
-                            label: inputValue,
-                            value: inputValue,
-                          };
-                          // Optionally add the new option to specializations
-                          setSpecializations((prev) => [...prev, newOption]);
-                          // Update formData with the new value
-                          handleInputChange({
-                            target: {
-                              name: "specialization",
-                              value: inputValue,
-                            },
-                          });
-                        }}
-                        placeholder="Search or select a specialization..."
-                        isClearable
-                        isSearchable
-                        isDisabled={isLoadingSpecializations}
-                        noOptionsMessage={() =>
-                          isLoadingSpecializations
-                            ? "Loading specializations..."
-                            : "No specializations available"
-                        }
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            borderColor: errors.specialization
-                              ? "#ef4444" // Tailwind red-500
-                              : state.isFocused
-                              ? "#3b82f6" // Tailwind blue-500
-                              : "#d1d5db", // Tailwind gray-300
-                            borderWidth: "1px",
-                            borderRadius: "0.5rem", // Tailwind rounded-lg
-                            padding: "0.5rem 0.75rem", // Match px-4 py-3
-                            boxShadow: state.isFocused
-                              ? "0 0 0 2px #3b82f6"
-                              : "none", // focus:ring-2
-                            "&:hover": {
-                              borderColor: errors.specialization
-                                ? "#ef4444"
-                                : state.isFocused
-                                ? "#3b82f6"
-                                : "#d1d5db",
-                            },
-                            transition: "all 300ms",
-                          }),
-                          input: (base) => ({
-                            ...base,
-                            fontSize: "0.875rem", // Tailwind text-sm
-                          }),
-                          menu: (base) => ({
-                            ...base,
-                            fontSize: "0.875rem", // Tailwind text-sm
-                          }),
-                        }}
-                      />
-                      {errors.specialization && (
-                        <p className="mt-1 text-xs text-red-500">
-                          {errors.specialization}
-                        </p>
-                      )}
-                    </div>
-                    {errors.specialization && (
-                      <p className="mt-1 text-xs text-red-500">
-                        {errors.specialization}
-                      </p>
-                    )}
-                    {apiErrorSpecializations && (
-                      <p className="mt-1 text-xs text-red-500">
-                        {apiErrorSpecializations}
-                      </p>
-                    )}
-                  </div>
-                ) : null}
-              </motion.div>
-            )}
+{["Graduated", "Masters", "ITI", "Diploma", "others"].includes(
+  formData.educationLevel
+) && (
+  <motion.div
+    initial={{ opacity: 0, height: 0 }}
+    animate={{ opacity: 1, height: "auto" }}
+    exit={{ opacity: 0, height: 0 }}
+    transition={{ duration: 0.3 }}
+    className="space-y-4"
+  >
+    <div>
+      <label className="block text-sm font-semibold text-gray-800">
+        Course *
+      </label>
+      <CreatableSelect
+        name="course"
+        options={courses}
+        className="mt-2 text-sm"
+        classNamePrefix="select"
+        value={
+          formData.course
+            ? courses.find(
+                (option) => option.label === formData.course
+              ) || {
+                label: formData.course,
+                value: formData.course,
+              } // Handle custom course
+            : null
+        }
+        onChange={(selected) => {
+          const courseName = selected ? selected.label : "";
+          setFormData((prev) => ({
+            ...prev,
+            course: courseName,
+            specialization: "",
+          }));
+          localStorage.setItem(
+            "jobPostingFormData",
+            JSON.stringify({
+              data: {
+                ...formData,
+                course: courseName,
+                specialization: "",
+              },
+              timestamp: new Date().getTime(),
+            })
+          );
+        }}
+        onCreateOption={(inputValue) => {
+          const newCourse = inputValue.trim();
+          if (newCourse) {
+            const newOption = {
+              value: newCourse,
+              label: newCourse,
+            };
+            setCourses((prev) => [...prev, newOption]);
+            setFormData((prev) => ({
+              ...prev,
+              course: newCourse,
+              specialization: "",
+            }));
+            localStorage.setItem(
+              "jobPostingFormData",
+              JSON.stringify({
+                data: {
+                  ...formData,
+                  course: newCourse,
+                  specialization: "",
+                },
+                timestamp: new Date().getTime(),
+              })
+            );
+          }
+        }}
+        placeholder="Search or select a course..."
+        isClearable
+        isSearchable
+        isDisabled={!formData.educationLevel || isLoadingCourses}
+        noOptionsMessage={() =>
+          isLoadingCourses
+            ? "Loading courses..."
+            : "No courses available"
+        }
+        styles={{
+          control: (base, state) => ({
+            ...base,
+            borderColor: errors.course
+              ? "#ef4444" // Tailwind red-500
+              : state.isFocused
+              ? "#3b82f6" // Tailwind blue-500
+              : "#d1d5db", // Tailwind gray-300
+            borderWidth: "1px",
+            borderRadius: "0.5rem", // Tailwind rounded-lg
+            padding: "0.5rem 0.75rem", // Match px-4 py-3
+            boxShadow: state.isFocused
+              ? "0 0 0 2px #3b82f6"
+              : "none", // focus:ring-2
+            "&:hover": {
+              borderColor: errors.course
+                ? "#ef4444"
+                : state.isFocused
+                ? "#3b82f6"
+                : "#d1d5db",
+            },
+            transition: "all 300ms",
+          }),
+          input: (base) => ({
+            ...base,
+            fontSize: "0.875rem", // Tailwind text-sm
+          }),
+          menu: (base) => ({
+            ...base,
+            fontSize: "0.875rem", // Tailwind text-sm
+          }),
+        }}
+      />
+      {errors.course && (
+        <p className="mt-1 text-xs text-red-500">{errors.course}</p>
+      )}
+    </div>
+    {console.log("Selected Course:", formData.course)}
+    {formData.course !== "Any" && formData.course !== "" ? (
+      <div>
+        <div>
+          <label className="block text-sm font-semibold text-gray-800">
+            Specialization *
+          </label>
+          <CreatableSelect
+            name="specialization"
+            options={specializations}
+            className={`mt-2 text-sm ${
+              errors.specialization ? "border-red-500" : ""
+            }`}
+            classNamePrefix="select"
+            value={
+              formData.specialization
+                ? specializations.find(
+                    (spec) => spec.value === formData.specialization
+                  ) || {
+                    label: formData.specialization,
+                    value: formData.specialization,
+                  }
+                : null
+            }
+            onChange={(selected) => {
+              const value = selected ? selected.value : "";
+              handleInputChange({
+                target: { name: "specialization", value },
+              });
+            }}
+            onCreateOption={(inputValue) => {
+              const newOption = {
+                label: inputValue,
+                value: inputValue,
+              };
+              // Optionally add the new option to specializations
+              setSpecializations((prev) => [...prev, newOption]);
+              // Update formData with the new value
+              handleInputChange({
+                target: {
+                  name: "specialization",
+                  value: inputValue,
+                },
+              });
+            }}
+            placeholder="Search or select a specialization..."
+            isClearable
+            isSearchable
+            isDisabled={isLoadingSpecializations}
+            noOptionsMessage={() =>
+              isLoadingSpecializations
+                ? "Loading specializations..."
+                : "No specializations available"
+            }
+            styles={{
+              control: (base, state) => ({
+                ...base,
+                borderColor: errors.specialization
+                  ? "#ef4444" // Tailwind red-500
+                  : state.isFocused
+                  ? "#3b82f6" // Tailwind blue-500
+                  : "#d1d5db", // Tailwind gray-300
+                borderWidth: "1px",
+                borderRadius: "0.5rem", // Tailwind rounded-lg
+                padding: "0.5rem 0.75rem", // Match px-4 py-3
+                boxShadow: state.isFocused
+                  ? "0 0 0 2px #3b82f6"
+                  : "none", // focus:ring-2
+                "&:hover": {
+                  borderColor: errors.specialization
+                    ? "#ef4444"
+                    : state.isFocused
+                    ? "#3b82f6"
+                    : "#d1d5db",
+                },
+                transition: "all 300ms",
+              }),
+              input: (base) => ({
+                ...base,
+                fontSize: "0.875rem", // Tailwind text-sm
+              }),
+              menu: (base) => ({
+                ...base,
+                fontSize: "0.875rem", // Tailwind text-sm
+              }),
+            }}
+          />
+          {errors.specialization && (
+            <p className="mt-1 text-xs text-red-500">
+              {errors.specialization}
+            </p>
+          )}
+        </div>
+        {errors.specialization && (
+          <p className="mt-1 text-xs text-red-500">
+            {errors.specialization}
+          </p>
+        )}
+        {apiErrorSpecializations && (
+          <p className="mt-1 text-xs text-red-500">
+            {apiErrorSpecializations}
+          </p>
+        )}
+      </div>
+    ) : null}
+  </motion.div>
+)}
 
             <div>
               <label className="block text-sm font-semibold text-gray-800">

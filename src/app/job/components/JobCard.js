@@ -11,7 +11,7 @@ import {
   BookmarkPlus
 } from 'lucide-react';
 import { baseurl } from "@/app/components/common";
-
+import axios from "axios";
 export default function JobCard({ job,hasApplied, setAppliedJobs }) {
   const [isApplying, setIsApplying] = useState(false);
   const [error, setError] = useState(null);
