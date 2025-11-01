@@ -10,6 +10,8 @@ import {
   FaSpinner,
   FaTimes,
   FaUserCircle,
+  FaEye,
+  FaEyeSlash,
 } from "react-icons/fa";
 import { RiLockPasswordFill } from "react-icons/ri";
 import { baseurl } from "./common";
@@ -35,6 +37,8 @@ export default function Navbar() {
   const pathname = usePathname();
   const [usercred, setusercred] = useState();
   const [showCredits, setShowCredits] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     const checkLogin = async () => {
@@ -353,9 +357,8 @@ export default function Navbar() {
         setResetToken("");
         setError("");
         alert("Password reset successfully. Please login with your new password.");
-      } else {
-        setError(response.data.message || "Failed to reset password. Please try again.");
-      }
+      } reinforce
+      setError(response.data.message || "Failed to reset password. Please try again.");
     } catch (error) {
       console.error("Error resetting password:", error);
       setError("Failed to reset password. Please try again.");
@@ -386,11 +389,13 @@ export default function Navbar() {
     setEmail("");
     setPassword("");
     setConfirmPassword("");
-    setOtp("");
+    setOtp("")
     setResetToken("");
     setError("");
     setUseOtpLogin(false);
     setModalMode("login");
+    setShowPassword(false);
+    setShowConfirmPassword(false);
   };
 
   return (
@@ -647,12 +652,19 @@ export default function Navbar() {
                 <div className="relative">
                   <RiLockPasswordFill className="absolute top-3 left-3 text-gray-400" />
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     placeholder="Enter your password"
-                    className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-10 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     onChange={(e) => setPassword(e.target.value)}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
                 </div>
               )}
 
@@ -687,22 +699,36 @@ export default function Navbar() {
                   <div className="relative">
                     <RiLockPasswordFill className="absolute top-3 left-3 text-gray-400" />
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       value={password}
                       placeholder="Enter new password"
-                      className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-10 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       onChange={(e) => setPassword(e.target.value)}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
                   </div>
                   <div className="relative">
                     <RiLockPasswordFill className="absolute top-3 left-3 text-gray-400" />
                     <input
-                      type="password"
+                      type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       placeholder="Confirm new password"
-                      className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-10 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       onChange={(e) => setConfirmPassword(e.target.value)}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+                    >
+                      {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
                   </div>
                 </>
               )}

@@ -8,9 +8,10 @@ import {
   FiX,
   FiEye,
   FiEyeOff,
+  FiUser,
 } from "react-icons/fi";
 
-const Five = ({ alldata, handelinputs, handelresume, resume, setalldata,errors }) => {
+const Five = ({ alldata, handelinputs, handelresume, resume, setalldata, errors, profile_pic, setProfilePic }) => {
   const [showpassword, setShowpassword] = useState(false);
 
   // Indian language options
@@ -256,6 +257,30 @@ const Five = ({ alldata, handelinputs, handelresume, resume, setalldata,errors }
     }
   };
 
+  // Handle profile picture change
+  const handleProfilePicChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        setProfilePic(null);
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        // Max 2MB
+        alert("Profile picture must be under 2MB");
+        return;
+      }
+      setProfilePic(file);
+    }
+  };
+
+  // Remove profile picture
+  const removeProfilePic = (e) => {
+    e.stopPropagation();
+    setProfilePic(null);
+    document.getElementById("profile-pic-upload").value = "";
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm p-6 lg:p-8 hover:shadow-md transition-shadow duration-300">
       {/* Header */}
@@ -267,6 +292,77 @@ const Five = ({ alldata, handelinputs, handelresume, resume, setalldata,errors }
       </div>
 
       <div className="space-y-6">
+        {/* Profile Picture Upload */}
+        <div className="animate-fade-in">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Profile Picture
+            <span className="text-xs text-gray-500 ml-1">
+              (Optional)
+            </span>
+          </label>
+          <div className="relative group">
+            <input
+              type="file"
+              id="profile-pic-upload"
+              accept="image/jpeg,image/png,image/jpg"
+              onChange={handleProfilePicChange}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+            />
+            <label
+              htmlFor="profile-pic-upload"
+              className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 ${
+                profile_pic
+                  ? "border-emerald-100 bg-emerald-50"
+                  : "border-gray-300 hover:border-emerald-400 bg-gray-50 group-hover:bg-white"
+              }`}
+            >
+              {profile_pic ? (
+                <div className="flex flex-col items-center w-full">
+                  <div className="relative mb-3">
+                    <img
+                      src={URL.createObjectURL(profile_pic)}
+                      alt="Profile preview"
+                      className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-md"
+                    />
+                    <FiCheckCircle className="absolute -bottom-1 -right-1 w-6 h-6 text-white bg-emerald-500 rounded-full p-1" />
+                  </div>
+                  <p className="text-sm font-medium text-gray-800 truncate max-w-xs">
+                    {profile_pic.name}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {(profile_pic.size / 1024).toFixed(1)} KB
+                  </p>
+                  <button
+                    type="button"
+                    onClick={removeProfilePic}
+                    className="mt-3 flex items-center text-xs text-red-500 hover:text-red-600 transition-colors"
+                  >
+                    <FiX className="mr-1" /> Remove
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mb-3 group-hover:bg-emerald-100 transition-colors">
+                    <FiUser className="w-8 h-8 text-gray-400 group-hover:text-emerald-500" />
+                  </div>
+                  <p className="text-sm text-gray-600 text-center">
+                    <span className="font-medium text-emerald-600">
+                      Click to upload
+                    </span>{" "}
+                    or drag and drop
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    PNG, JPG, JPEG (Max. 2MB)
+                  </p>
+                </>
+              )}
+            </label>
+          </div>
+          {errors.profile_pic && (
+            <p className="text-red-500 text-xs mt-1">{errors.profile_pic}</p>
+          )}
+        </div>
+
         {/* English Proficiency Level */}
         <div className="animate-fade-in">
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -380,7 +476,7 @@ const Five = ({ alldata, handelinputs, handelresume, resume, setalldata,errors }
         </div>
 
         {/* Resume Upload */}
-       <div className="animate-fade-in">
+        <div className="animate-fade-in">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Upload Resume
           </label>

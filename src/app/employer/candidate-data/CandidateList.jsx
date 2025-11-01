@@ -13,7 +13,7 @@ import {
 import axios from "axios";
 import { BiMedal } from "react-icons/bi";
 import { MdWorkHistory } from "react-icons/md";
-import { baseurl } from "@/app/components/common";
+import { baseurl, storageLink } from "@/app/components/common";
 import {
   FaMapMarkerAlt,
   FaGlobe,
@@ -183,7 +183,7 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
         <div className="flex items-center gap-3">
           {candidate.profile_pic ? (
             <img
-              src={candidate.profile_pic}
+              src={`${storageLink}${candidate?.profile_pic}`}
               alt={`${candidate.full_name}'s profile`}
               className="w-12 h-12 rounded-full object-cover border-2 border-[#02325a]"
             />
@@ -1026,8 +1026,8 @@ const CandidateList = () => {
     <div className="flex min-h-screen  bg-gradient-to-br from-blue-50 to-gray-100 ">
       <Sidebar />
       <div className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 overflow-auto">
-        <div className="flex flex-col justify-end lg:flex-row gap-6 lg:gap-8 max-w-5xl mx-auto w-full">
-          <div className="sticky w-[35%] top-4">
+        <div className="flex flex-col  lg:flex-row gap-6 lg:gap-4 max-w-[80rem] mx-auto w-full">
+          <div className="sticky w-[30%] top-4">
             <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl p-6 sm:p-8 border border-gray-100">
               <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
                 <FaUser className="mr-2 text-[#02325a]" /> Filter Candidates
@@ -1057,7 +1057,7 @@ const CandidateList = () => {
                       className="mr-3 h-6 w-6 text-[#02325a] border-2 border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 cursor-pointer transition-transform duration-200 hover:scale-110"
                     />
                     <FaPhone className="mr-2 text-[#02325a] text-lg" /> Filter
-                    by Number Revealed Period
+                    by Number Revealed 
                   </label>
                   {filters.show_number_revealed_period && (
                     <select
@@ -1329,7 +1329,7 @@ const CandidateList = () => {
               </form>
             </div>
           </div>
-          <div className="w-[65%]">
+          <div className="w-[70%]">
             <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-800">

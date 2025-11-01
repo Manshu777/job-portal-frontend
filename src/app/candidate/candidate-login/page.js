@@ -15,6 +15,7 @@ import Swal from "sweetalert2";
 import { FiChevronLeft, FiChevronRight, FiCheck } from "react-icons/fi";
 
 export default function Page() {
+  const [profilePic, setProfilePic] = useState(null);
   const router = useRouter();
   // const [isChecked, setIsChecked] = useState(false);
   // const [selectedGender, setSelectedGender] = useState(null);
@@ -48,13 +49,35 @@ export default function Page() {
     password: "",
     english_level: "",
     highest_education: "",
+    
+    specialization: "",
+    college_name: "",
+
+    preferred_job_titles: [],
+    preferred_locations: [],
+    highest_education: "",
+  currently_pursuing: "No",
+
+
+
+  // NESTED education blocks – **exactly** what the API expects
+  graduation: {
     education_level: "",
     specialization: "",
     college_name: "",
     complete_years: "",
+    complete_month: "",
     school_medium: "",
-    preferred_job_titles: [],
-    preferred_locations: [],
+  },
+  postGraduation: {
+    education_level: "",
+    specialization: "",
+    college_name: "",
+    complete_years: "",
+    complete_month: "",
+    school_medium: "",
+  },
+  
     preferred_languages: [],
     state: "",
     city: "",
@@ -99,24 +122,24 @@ export default function Page() {
         newErrors.city = "City is required";
         isValid = false;
       }
-    } else if (step === 3) {
-       console.log('highest_education',alldata?.highest_education)
+    } 
+    else if (step === 3) {
       if (!alldata?.highest_education) {
-        newErrors.highest_education = "Highest education is required";
-        isValid = false;
-      }
-       if(!alldata?.school_medium){
-        newErrors.highest_education = "Highest education is required";
-        isValid = false;
-       }
-       else if (alldata?.highest_education == 'Graduate'){
+    newErrors.highest_education = "Highest education is required";
+    isValid = false;
+  }
+  
+  // Fix: Separate validation for school_medium
+  if (["10th", "12th"].includes(alldata.highest_education) && !alldata.school_medium) {
+    newErrors.school_medium = "School medium is required";
+    isValid = false;
+  }
+  
+  // For Graduate/Post Graduate
+ 
 
-
-      }
-
-     
-
-    } else if (step === 4) {
+    }
+    else if (step === 4) {
       if(!alldata.experience_level){
           newErrors.experience_level = "Experience Level is required";
         isValid = false;
@@ -172,14 +195,20 @@ export default function Page() {
     }
   };
 
-  const handelinputs = (e) => {
-    const { name, value } = e.target;
-    setalldata((prevData) => ({
-      ...prevData,
-      [name]: value,
+ const handelinputs = (e) => {
+  const { name, value } = e.target;
+  const [parent, child] = name.split('.');
+
+  if (child) {
+    setalldata((prev) => ({
+      ...prev,
+      [parent]: { ...prev[parent], [child]: value },
     }));
-    // setalldata({...alldata,[e.vtagate.name]:e.tagate.value})
-  };
+  } else {
+    setalldata((prev) => ({ ...prev, [name]: value }));
+  }
+};
+
   const handelgender = (gender) => {
     setalldata({ ...alldata, gender });
   };
@@ -188,75 +217,91 @@ export default function Page() {
     setalldata({ ...alldata, [key]: value });
   };
 
+
   const handelSubmit = async () => {
-    let token;
-    if (typeof window !== "undefined") {
-      token = localStorage?.getItem("port_tok") || alldata?.token;
-    }
+  let token;
+  if (typeof window !== "undefined") {
+    token = localStorage?.getItem("port_tok") || alldata?.token;
+  }
 
-    if (!token) {
-      console.error("No token found, redirecting or handling error");
-      router.push("/"); // Redirect to login or handle appropriately
-      return;
-    }
+  if (!token) {
+    console.error("No token found");
+    router.push("/");
+    return;
+  }
 
-    const formData = new FormData();
-    Object.entries(alldata).forEach(([key, value]) => {
-      // List of fields that should be treated as arrays
-      const arrayFields = ['skills', 'preferred_job_titles', 'preferred_languages', 'preferred_locations'];
+  const formData = new FormData();
 
-      if (value === undefined || value === null) {
-        formData.append(key, "");
-      } else if (arrayFields.includes(key)) {
-        // Handle array fields
-        let values = Array.isArray(value) ? value : (typeof value === 'string' && value ? value.split(',').map(item => item.trim()) : []);
-        values.forEach((item) => {
-          formData.append(`${key}[]`, item);
-        });
-      } else {
-        formData.append(key, value);
-      }
+  // Define fields that are objects and need to be stringified
+  // const nestedObjectFields = ['graduation', 'postGraduation'];
+
+  const arrayFields = ['skills', 'preferred_job_titles', 'preferred_languages', 'preferred_locations'];
+const nestedObjectFields = ['graduation', 'postGraduation']; // Add more if needed
+
+Object.entries(alldata).forEach(([key, value]) => {
+  // Skip internal or unwanted keys
+  if (value === undefined) {
+    formData.append(key, "");
+    return;
+  }
+
+  if (value === null) {
+    formData.append(key, "");
+    return;
+  }
+
+  // Handle array fields (skills, preferred_*, etc.)
+  if (arrayFields.includes(key)) {
+    const values = Array.isArray(value)
+      ? value
+      : typeof value === 'string' && value.trim() !== ''
+        ? value.split(',').map(item => item.trim()).filter(Boolean)
+        : [];
+
+    values.forEach(item => {
+      formData.append(`${key}[]`, item);
     });
+    return;
+  }
 
-    if (resume) {
-      formData.append("resume", resume);
-    }
+  // Handle nested objects: graduation, postGraduation
+  if (nestedObjectFields.includes(key) && typeof value === 'object' && value !== null) {
+    formData.append(key, JSON.stringify(value));
+    return;
+  }
 
-    try {
-      const response = await axios.post(
-        `${baseurl}/updatecandidate/${token}`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+  // Default: append scalar values (string, number, boolean)
+  formData.append(key, value);
+});
+  if (resume) {
+    formData.append("resume", resume);
+  }
 
-      if (response.data.success) {
-        Swal.fire({
-          title: "Submit Success",
-          text: "You clicked the button!",
-          icon: "success",
-        });
-
-        router.push("/candidate/dashboard");
-      } else {
-        Swal.fire({
-          title: "Submit Error",
-          text: "Failed to update candidate data.",
-          icon: "error",
-        });
+  try {
+    const response = await axios.post(
+      `${baseurl}/updatecandidate/${token}`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
       }
-    } catch (error) {
-      console.error("Error in handelSubmit:", error);
-      Swal.fire({
-        title: "Submit Error",
-        text: "An error occurred while submitting.",
-        icon: "error",
-      });
+    );
+
+    if (response.data.success) {
+      Swal.fire({ title: "Success", text: "Profile updated!", icon: "success" });
+      router.push("/candidate/dashboard");
+    } else {
+      Swal.fire({ title: "Error", text: response.data.message || "Update failed", icon: "error" });
     }
-  };
+  } catch (error) {
+    console.error("Error:", error);
+    Swal.fire({ title: "Error", text: "Submission failed", icon: "error" });
+  }
+};
+
+
 
   const getcondidate = async (token) => {
     if (!token) {
@@ -307,6 +352,8 @@ export default function Page() {
       });
     }
   };
+
+  // console.log("alldata", alldata);
 
   return (
     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-5 md:px-12 xl:px-24 py-10 lg:py-14">
@@ -412,14 +459,14 @@ export default function Page() {
             )}
             {nextlen === 5 && (
               <Five
-                resume={resume}
-                handelresume={handelresume}
                 alldata={alldata}
-                handelinputs={handelinputs}
-                handelgender={handelgender}
-                addskilles={addskilles}
                 setalldata={setalldata}
+                handelinputs={handelinputs}
+                handelresume={handelresume}
+                resume={resume}
                 errors={errors}
+                profile_pic={profilePic}
+                setProfilePic={setProfilePic}
               />
             )}
           </div>

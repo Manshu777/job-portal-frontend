@@ -1,588 +1,533 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { FiBook, FiAward } from "react-icons/fi";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Select from "react-select";
+import { FiBook, FiAward } from "react-icons/fi";
+import { customSelectStyles } from "../../components/constants/SelectStyles";
+import {
+  EDUCATION_LEVELS,
+  MONTHS,
+  SCHOOL_MEDIUMS,
+} from "../../components/constants/education";
+import { baseurl } from "@/app/components/common";
 
-const Second = ({ alldata = {}, handelinputs, errors }) => {
-  const [qualifications, setQualifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const EducationLvl = [
-    { name: "10th", value: 5 },
-    { name: "12th", value: 6 },
-    { name: "Diploma", value: 7 },
-    { name: "ITI", value: 3 },
-    { name: "Graduate", value: 1 },
-    { name: "Post Graduate", value: 2 },
-  ];
+const Second = ({ alldata, handelinputs, errors }) => {
+  const [eduLvl, setEduLvl] = useState(null);
 
-  const experienceLevelOptions = [
-    { value: "Fresher", label: "Fresher" },
-    { value: "Experienced", label: "Experienced" },
-  ];
+  // Separate qualification lists
+  const [gradQualifications, setGradQualifications] = useState([]);
+  const [postGradQualifications, setPostGradQualifications] = useState([]);
+  const [loadingGradQual, setLoadingGradQual] = useState(false);
+  const [loadingPostGradQual, setLoadingPostGradQual] = useState(false);
 
-  const [eduLvl, setEduLvl] = useState(() => {
-    const foundLevel = alldata.highest_education
-      ? EducationLvl.find((lvl) => lvl.name === alldata.highest_education)
-      : null;
-    return foundLevel ? foundLevel.value : null;
-  });
-  const [specializations, setSpecializations] = useState([]);
-  const [loadingQualifications, setLoadingQualifications] = useState(false);
-  const [loadingSpecializations, setLoadingSpecializations] = useState(false);
-  const [error, setError] = useState(null);
+  // Specializations per level
+  const [gradSpecializations, setGradSpecializations] = useState([]);
+  const [postGradSpecializations, setPostGradSpecializations] = useState([]);
+  const [loadingGradSpec, setLoadingGradSpec] = useState(false);
+  const [loadingPostGradSpec, setLoadingPostGradSpec] = useState(false);
 
-  // Fetch qualifications based on highest education level
+  const [apiError, setApiError] = useState("");
+
+  // Map highest_education → eduLvl
   useEffect(() => {
-    const fetchQualifications = async () => {
-      if (!eduLvl || ["5", "6"].includes(eduLvl.toString())) {
-        setQualifications([]);
-        handelinputs({ target: { name: "education_level", value: "" } });
-        handelinputs({ target: { name: "specialization", value: "" } });
-        setSpecializations([]);
-        setLoading(false);
-        return;
-      }
-      setLoadingQualifications(true);
-      setError(null);
-      try {
-        const apiUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://147.93.18.63:8001";
-        const response = await fetch(
-          `${apiUrl}/api/v1/qualifications/education-level/${eduLvl}`
-        );
-        if (!response.ok) throw new Error("Failed to fetch qualifications");
-        const data = await response.json();
-        if (data.status !== "success")
-          throw new Error(data.message || "Failed to fetch qualifications");
-        setQualifications(data.data || []);
-      } catch (err) {
-        setError("Error fetching qualifications. Please try again.");
-        console.error(err);
-      } finally {
-        setLoadingQualifications(false);
-        setLoading(false);
-      }
-    };
-    fetchQualifications();
-  }, [eduLvl, handelinputs]);
+    const found = EDUCATION_LEVELS.find((l) => l.name === alldata.highest_education);
+    setEduLvl(found ? found.value : null);
+  }, [alldata.highest_education]);
 
-  // Fetch specializations based on selected qualification
-  useEffect(() => {
-    const fetchSpecializations = async () => {
-      if (!alldata.education_level || ["5", "6"].includes(eduLvl.toString())) {
-        setSpecializations([]);
-        return;
-      }
-      setLoadingSpecializations(true);
-      setError(null);
-      try {
-        const selectedQualification = qualifications.find(
-          (q) => q.title === alldata.education_level
-        );
-        if (!selectedQualification) {
-          setSpecializations([]);
-          return;
-        }
-        const apiUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://147.93.18.63:8001";
-        const response = await fetch(
-          `${apiUrl}/api/v1/qualifications/${selectedQualification.id}/specializations`
-        );
-        if (!response.ok) throw new Error("Failed to fetch specializations");
-        const data = await response.json();
-        if (data.status !== "success")
-          throw new Error(data.message || "Failed to fetch specializations");
-        setSpecializations(data.data.specializations || []);
-      } catch (err) {
-        setError("Error fetching specializations. Please try again.");
-        console.error(err);
-      } finally {
-        setLoadingSpecializations(false);
-      }
-    };
-    fetchSpecializations();
-  }, [alldata.education_level, qualifications, eduLvl]);
-
-  // Handle the highest education level change
-  const handleEducationLevelChange = (selectedOption) => {
-    const level = selectedOption ? selectedOption.value : null;
-    const name = selectedOption ? selectedOption.label : "";
-    setEduLvl(level);
-    handelinputs({ target: { name: "highest_education", value: name } });
-    setSpecializations([]); // Reset specializations on education level change
-    if (["10th", "12th"].includes(name)) {
-      handelinputs({ target: { name: "education_level", value: "" } });
-      handelinputs({ target: { name: "specialization", value: "" } });
-      handelinputs({ target: { name: "college_name", value: "" } });
+  // Fetch Graduation Qualifications (Level 1)
+  const fetchGradQualifications = useCallback(async () => {
+    setLoadingGradQual(true);
+    try {
+      const res = await fetch(`${baseurl}/qualifications/education-level/1`);
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.message);
+      setGradQualifications(json.data || []);
+    } catch (e) {
+      setApiError("Failed to load graduation programs");
+    } finally {
+      setLoadingGradQual(false);
     }
-  };
+  }, []);
 
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
+  // Fetch Post-Graduation Qualifications (Level 2)
+  const fetchPostGradQualifications = useCallback(async () => {
+    setLoadingPostGradQual(true);
+    try {
+      const res = await fetch(`${baseurl}/qualifications/education-level/2`);
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.message);
+      setPostGradQualifications(json.data || []);
+    } catch (e) {
+      setApiError("Failed to load post-graduation programs");
+    } finally {
+      setLoadingPostGradQual(false);
+    }
+  }, []);
 
-  // Options for react-select
-  const educationLevelOptions = EducationLvl.map((data) => ({
-    value: data.value,
-    label: data.name,
-  }));
+  useEffect(() => {
+    fetchGradQualifications();
+    fetchPostGradQualifications();
+  }, [fetchGradQualifications, fetchPostGradQualifications]);
 
-  const qualificationOptions = qualifications.map((program) => ({
-    value: program.title,
-    label: program.title,
-  }));
+  // Fetch Specializations for Graduation
+  const selectedGradQual = useMemo(() => {
+    return gradQualifications.find((q) => q.title === alldata?.graduation?.education_level);
+  }, [gradQualifications, alldata?.graduation?.education_level]);
 
-  const specializationOptions = specializations.map((spec) => ({
-    value: spec.title,
-    label: spec.title,
-  }));
-
-  const schoolMediumOptions = [
-    "English",
-    "Hindi",
-    "Punjabi",
-    "Gujarati",
-    "Marathi",
-    "Other"
-  ].map((medium) => ({
-    value: medium,
-    label: medium,
-  }));
-
-  const monthOptions = months.map((month) => ({
-    value: month,
-    label: month,
-  }));
-
-  // Validate year of completion
-  const handleYearChange = (e) => {
-    const value = e.target.value;
-    const currentYear = new Date().getFullYear();
-    if (alldata.currently_pursuing === "No" && value > currentYear) {
-      setError(
-        "Completion year cannot be in the future for completed education."
-      );
+  const fetchGradSpecializations = useCallback(async () => {
+    if (!selectedGradQual) {
+      setGradSpecializations([]);
       return;
     }
-    handelinputs(e);
+    setLoadingGradSpec(true);
+    try {
+      const res = await fetch(`${baseurl}/qualifications/${selectedGradQual.id}/specializations`);
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.message);
+      setGradSpecializations(json.data.specializations || []);
+    } catch (e) {
+      setApiError("Failed to load graduation specializations");
+    } finally {
+      setLoadingGradSpec(false);
+    }
+  }, [selectedGradQual]);
+
+  useEffect(() => {
+    fetchGradSpecializations();
+  }, [fetchGradSpecializations]);
+
+  // Fetch Specializations for Post-Graduation
+  const selectedPostGradQual = useMemo(() => {
+    return postGradQualifications.find((q) => q.title === alldata?.postGraduation?.education_level);
+  }, [postGradQualifications, alldata?.postGraduation?.education_level]);
+
+  const fetchPostGradSpecializations = useCallback(async () => {
+    if (!selectedPostGradQual) {
+      setPostGradSpecializations([]);
+      return;
+    }
+    setLoadingPostGradSpec(true);
+    try {
+      const res = await fetch(`${baseurl}/qualifications/${selectedPostGradQual.id}/specializations`);
+      const json = await res.json();
+      if (json.status !== "success") throw new Error(json.message);
+      setPostGradSpecializations(json.data.specializations || []);
+    } catch (e) {
+      setApiError("Failed to load post-graduation specializations");
+    } finally {
+      setLoadingPostGradSpec(false);
+    }
+  }, [selectedPostGradQual]);
+
+  useEffect(() => {
+    fetchPostGradSpecializations();
+  }, [fetchPostGradSpecializations]);
+
+  // Reset block
+  const resetBlock = (block) => {
+    const empty = {
+      education_level: "",
+      specialization: "",
+      college_name: "",
+      complete_years: "",
+      complete_month: "",
+      school_medium: "",
+    };
+    handelinputs({ target: { name: block, value: empty } });
   };
 
-  if (loading) {
-    return <div className="text-center p-8">Loading...</div>;
-  }
+  // Handle highest education change
+  const handleHighestChange = (opt) => {
+    const name = opt ? opt.label : "";
+    handelinputs({ target: { name: "highest_education", value: name } });
 
-
-
-  const customStyles = {
-    control: (provided) => ({
-      ...provided,
-      borderColor: "#d1d5db",
-      padding: "0.5rem",
-      borderRadius: "0.5rem",
-      "&:hover": {
-        borderColor: "#10b981",
-      },
-      boxShadow: "none",
-    }),
-    option: (provided, state) => ({
-      ...provided,
-      backgroundColor: state.isSelected
-        ? "#10b981"
-        : state.isFocused
-        ? "#ecfdf5"
-        : null,
-      color: state.isSelected ? "white" : "#374151",
-    }),
-    menu: (provided) => ({
-      ...provided,
-      borderRadius: "0.5rem",
-      marginTop: "0.25rem",
-      zIndex: 9999, // Add this to ensure the dropdown menu appears above other elements
-    }),
+    if (!["Graduate", "Post Graduate"].includes(name)) {
+      resetBlock("graduation");
+      resetBlock("postGraduation");
+    }
   };
+
+  // Handle year validation
+  const handleYear = (e, block) => {
+    const val = e.target.value;
+    const cur = new Date().getFullYear();
+
+    if (alldata.currently_pursuing === "No" && parseInt(val) > cur) {
+      setApiError("Completion year cannot be in the future");
+      return;
+    }
+    setApiError("");
+    handelinputs({
+      target: { name: `${block ? block + "." : ""}complete_years`, value: val },
+    });
+  };
+
+  // Options
+  const educationOptions = EDUCATION_LEVELS.map((e) => ({
+    value: e.value,
+    label: e.name,
+  }));
+  const monthOptions = MONTHS.map((m) => ({ value: m, label: m }));
+  const mediumOptions = SCHOOL_MEDIUMS.map((m) => ({ value: m, label: m }));
+
+  const gradQualOptions = gradQualifications.map((q) => ({ value: q.title, label: q.title }));
+  const postGradQualOptions = postGradQualifications.map((q) => ({ value: q.title, label: q.title }));
+  const gradSpecOptions = gradSpecializations.map((s) => ({ value: s.title, label: s.title }));
+  const postGradSpecOptions = postGradSpecializations.map((s) => ({ value: s.title, label: s.title }));
 
   return (
-    <div className="w-full p-4 lg:p-8 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
-      <div className="flex items-center mb-6">
-        <div className="bg-blue-100 p-3 rounded-lg mr-4">
-          <FiBook className="text-blue-600 text-xl" />
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">
-            Education Details
-          </h2>
-          <p className="text-gray-500 text-sm">
-            Fill in your academic information
-          </p>
-        </div>
+    <div className="space-y-8">
+      {/* Currently Pursuing */}
+      <div className="flex gap-4">
+        {["Yes", "No"].map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() =>
+              handelinputs({
+                target: { name: "currently_pursuing", value: v },
+              })
+            }
+            className={`px-5 py-2 rounded-full border ${
+              alldata.currently_pursuing === v
+                ? "bg-blue-600 text-white"
+                : "bg-gray-100 text-gray-700"
+            }`}
+          >
+            {v}
+          </button>
+        ))}
       </div>
 
-      {error && (
-        <div className="mb-6 text-red-500 text-sm flex items-center">
-          {error}
-          <button
-            onClick={() => setError(null)}
-            className="ml-4 text-blue-500 underline"
-          >
-            Retry
-          </button>
+      {/* Highest Education */}
+      <div>
+        <label className="flex items-center font-medium text-gray-700">
+          <FiBook className="mr-2 text-blue-500" />
+          {alldata.currently_pursuing === "Yes" ? "Currently Pursuing" : "Highest Education Level"}
+          <span className="text-red-500 ml-1">*</span>
+        </label>
+        <Select
+          options={educationOptions}
+          value={educationOptions.find((o) => o.label === alldata.highest_education)}
+          onChange={handleHighestChange}
+          placeholder="Select level"
+          styles={customSelectStyles}
+          menuPortalTarget={document.body}
+        />
+        {errors.highest_education && (
+          <p className="text-red-500 text-sm mt-1">{errors.highest_education}</p>
+        )}
+      </div>
+
+      {/* 10th / 12th / Diploma / ITI */}
+      {eduLvl && [3, 5, 6, 7].includes(eduLvl) && (
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Degree Program (only for Diploma & ITI) */}
+          {[3, 7].includes(eduLvl) && (
+            <div>
+              <label className="flex items-center font-medium text-gray-700">
+                <FiAward className="mr-2 text-blue-500" />
+                Degree Program <span className="text-red-500 ml-1">*</span>
+              </label>
+              <Select
+                isLoading={loadingGradQual}
+                options={gradQualOptions}
+                value={gradQualOptions.find((o) => o.value === alldata?.education_level)}
+                onChange={(opt) =>
+                  handelinputs({
+                    target: { name: "education_level", value: opt?.value ?? "" },
+                  })
+                }
+                placeholder="Select degree"
+                styles={customSelectStyles}
+                menuPortalTarget={document.body}
+              />
+            </div>
+          )}
+
+          {/* School Medium */}
+          <div>
+            <label className="flex items-center font-medium text-gray-700">
+              <FiBook className="mr-2 text-blue-500" />
+              School Medium <span className="text-red-500 ml-1">*</span>
+            </label>
+            <Select
+              options={mediumOptions}
+              value={mediumOptions.find((o) => o.value === alldata.school_medium)}
+              onChange={(opt) =>
+                handelinputs({
+                  target: { name: "school_medium", value: opt?.value ?? "" },
+                })
+              }
+              styles={customSelectStyles}
+              menuPortalTarget={document.body}
+            />
+          </div>
+
+          {/* Completion Year */}
+          <div>
+            <label className="flex items-center font-medium text-gray-700">
+              <FiAward className="mr-2 text-blue-500" />
+              Completion Year <span className="text-red-500 ml-1">*</span>
+            </label>
+            <input
+              type="number"
+              value={alldata.complete_years ?? ""}
+              onChange={(e) => handleYear(e, "")}
+              min="1900"
+              max={new Date().getFullYear() + 5}
+              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Completion Month */}
+          <div>
+            <label className="flex items-center font-medium text-gray-700">
+              <FiAward className="mr-2 text-blue-500" />
+              Completion Month <span className="text-red-500 ml-1">*</span>
+            </label>
+            <Select
+              options={monthOptions}
+              value={monthOptions.find((o) => o.value === alldata.complete_month)}
+              onChange={(opt) =>
+                handelinputs({
+                  target: { name: "complete_month", value: opt?.value ?? "" },
+                })
+              }
+              styles={customSelectStyles}
+              menuPortalTarget={document.body}
+            />
+          </div>
         </div>
       )}
 
-      <div className="space-y-6">
-        {/* Currently Pursuing Toggle */}
-        <div className="space-y-2 animate-fade-in">
-          <label className="flex items-center text-sm font-medium text-gray-700">
-            Are You Currently Pursuing Your Education?
-          </label>
-          <div className="flex space-x-2">
-            {["Yes", "No"].map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() =>
+      {/* GRADUATION */}
+      {eduLvl && [1, 2].includes(eduLvl) && (
+        <div className="border-t pt-6">
+          <h3 className="text-xl font-semibold mb-4">Graduation</h3>
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Degree Program */}
+            <div>
+              <label className="flex items-center font-medium text-gray-700">
+                <FiAward className="mr-2 text-blue-500" />
+                Degree Program <span className="text-red-500 ml-1">*</span>
+              </label>
+              <Select
+                isLoading={loadingGradQual}
+                options={gradQualOptions}
+                value={gradQualOptions.find((o) => o.value === alldata?.graduation?.education_level)}
+                onChange={(opt) =>
                   handelinputs({
-                    target: { name: "currently_pursuing", value: option },
+                    target: { name: "graduation.education_level", value: opt?.value ?? "" },
                   })
                 }
-                className={`px-4 py-2 rounded-full border ${
-                  alldata.currently_pursuing === option
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-300"
-                } transition-all duration-200`}
-              >
-                {option}
-              </button>
-            ))}
+                placeholder="Select degree"
+                styles={customSelectStyles}
+                menuPortalTarget={document.body}
+              />
+              {errors["graduation.education_level"] && (
+                <p className="text-red-500 text-sm mt-1">{errors["graduation.education_level"]}</p>
+              )}
+            </div>
+
+            {/* Specialization */}
+            <div>
+              <label className="flex items-center font-medium text-gray-700">
+                <FiAward className="mr-2 text-blue-500" />
+                Specialization
+              </label>
+              <Select
+                isLoading={loadingGradSpec}
+                isDisabled={!alldata?.graduation?.education_level}
+                options={gradSpecOptions}
+                value={gradSpecOptions.find((o) => o.value === alldata?.graduation?.specialization)}
+                onChange={(opt) =>
+                  handelinputs({
+                    target: { name: "graduation.specialization", value: opt?.value ?? "" },
+                  })
+                }
+                placeholder="Select specialization"
+                styles={customSelectStyles}
+                menuPortalTarget={document.body}
+              />
+            </div>
+
+            {/* College */}
+            <div>
+              <label className="flex items-center font-medium text-gray-700">
+                <FiBook className="mr-2 text-blue-500" />
+                College / University <span className="text-red-500 ml-1">*</span>
+              </label>
+              <input
+                type="text"
+                value={alldata?.graduation?.college_name ?? ""}
+                onChange={handelinputs}
+                name="graduation.college_name"
+                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Completion Year */}
+            <div>
+              <label className="flex items-center font-medium text-gray-700">
+                <FiAward className="mr-2 text-blue-500" />
+                Completion Year <span className="text-red-500 ml-1">*</span>
+              </label>
+              <input
+                type="number"
+                value={alldata?.graduation?.complete_years ?? ""}
+                onChange={(e) => handleYear(e, "graduation")}
+                min="1900"
+                max={new Date().getFullYear() + 5}
+                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Completion Month */}
+            <div>
+              <label className="flex items-center font-medium text-gray-700">
+                <FiAward className="mr-2 text-blue-500" />
+                Completion Month <span className="text-red-500 ml-1">*</span>
+              </label>
+              <Select
+                options={monthOptions}
+                value={monthOptions.find((o) => o.value === alldata?.graduation?.complete_month)}
+                onChange={(opt) =>
+                  handelinputs({
+                    target: { name: "graduation.complete_month", value: opt?.value ?? "" },
+                  })
+                }
+                styles={customSelectStyles}
+                menuPortalTarget={document.body}
+              />
+            </div>
+
+            {/* School Medium */}
+            <div>
+              {/* <label className="flex items-center font-medium text-gray-700">
+                <FiBook className="mr-2 text-blue-500" />
+                School Medium
+              </label>
+              <Select
+                options={mediumOptions}
+                value={mediumOptions.find((o) => o.value === alldata?.graduation?.school_medium)}
+                onChange={(opt) =>
+                  handelinputs({
+                    target: { name: "graduation.school_medium", value: opt?.value ?? "" },
+                  })
+                }
+                styles={customSelectStyles}
+                menuPortalTarget={document.body}
+              /> */}
+            </div>
           </div>
         </div>
+      )}
 
-        {/* Education Level Dropdown */}
-        <div className="space-y-2 animate-fade-in">
-          <label
-            htmlFor="highest-education-select"
-            className="flex items-center text-sm font-medium text-gray-700"
-          >
-            <FiBook className="mr-2 text-blue-500" />
-            {alldata.currently_pursuing === "Yes"
-              ? "Currently Pursuing"
-              : "Highest Education Level"}
-          </label>
-          <Select
-            inputId="highest-education-select"
-            options={educationLevelOptions}
-            value={educationLevelOptions.find(
-              (option) => option.label === alldata.highest_education
-            )}
-            onChange={handleEducationLevelChange}
-            placeholder={
-              alldata.currently_pursuing === "Yes"
-                ? "Select Current Education Level"
-                : "Select Highest Education Level"
-            }
-            className="w-full"
-  
-              styles={customStyles}
+      {/* POST-GRADUATION */}
+      {eduLvl === 2 && (
+        <div className="border-t pt-6 mt-8">
+          <h3 className="text-xl font-semibold mb-4">Post-Graduation</h3>
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Degree Program */}
+            <div>
+              <label className="flex items-center font-medium text-gray-700">
+                <FiAward className="mr-2 text-blue-500" />
+                Degree Program <span className="text-red-500 ml-1">*</span>
+              </label>
+              <Select
+                isLoading={loadingPostGradQual}
+                options={postGradQualOptions}
+                value={postGradQualOptions.find((o) => o.value === alldata?.postGraduation?.education_level)}
+                onChange={(opt) =>
+                  handelinputs({
+                    target: { name: "postGraduation.education_level", value: opt?.value ?? "" },
+                  })
+                }
+                placeholder="Select degree"
+                styles={customSelectStyles}
+                menuPortalTarget={document.body}
+              />
+            </div>
 
+            {/* Specialization */}
+            <div>
+              <label className="flex items-center font-medium text-gray-700">
+                <FiAward className="mr-2 text-blue-500" />
+                Specialization
+              </label>
+              <Select
+                isLoading={loadingPostGradSpec}
+                isDisabled={!alldata?.postGraduation?.education_level}
+                options={postGradSpecOptions}
+                value={postGradSpecOptions.find((o) => o.value === alldata?.postGraduation?.specialization)}
+                onChange={(opt) =>
+                  handelinputs({
+                    target: { name: "postGraduation.specialization", value: opt?.value ?? "" },
+                  })
+                }
+                placeholder="Select specialization"
+                styles={customSelectStyles}
+                menuPortalTarget={document.body}
+              />
+            </div>
 
-  menuPortalTarget={document.body} 
-          />
-        </div>
+            {/* College */}
+            <div>
+              <label className="flex items-center font-medium text-gray-700">
+                <FiBook className="mr-2 text-blue-500" />
+                College / University
+              </label>
+              <input
+                type="text"
+                value={alldata?.postGraduation?.college_name ?? ""}
+                onChange={handelinputs}
+                name="postGraduation.college_name"
+                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-         {errors.highest_education && (
-          <p className="text-red-500 text-sm">{errors.highest_education}</p>
-        )}
+            {/* Completion Year */}
+            <div>
+              <label className="flex items-center font-medium text-gray-700">
+                <FiAward className="mr-2 text-blue-500" />
+                Completion Year
+              </label>
+              <input
+                type="number"
+                value={alldata?.postGraduation?.complete_years ?? ""}
+                onChange={(e) => handleYear(e, "postGraduation")}
+                min="1900"
+                max={new Date().getFullYear() + 5}
+                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-        {alldata.highest_education && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {["10th", "12th"].includes(alldata.highest_education) ? (
-              <>
-                {/* School Medium Dropdown */}
-                <div className="space-y-2 animate-fade-in">
-                  <label
-                    htmlFor="school-medium-select"
-                    className="flex items-center text-sm font-medium text-gray-700"
-                  >
-                    <FiBook className="mr-2 text-blue-500" />
-                    School Medium
-                  </label>
-                  <Select
-                    inputId="school-medium-select"
-                    options={schoolMediumOptions}
-                    value={schoolMediumOptions.find(
-                      (option) => option.value === alldata.school_medium
-                    )}
-                    onChange={(selected) =>
-                      handelinputs({
-                        target: {
-                          name: "school_medium",
-                          value: selected ? selected.value : "",
-                        },
-                      })
-                    }
-                    placeholder="Select School Medium"
-                    className="w-full"
-            
-                  />
-                </div>
-
-                {/* Year of Completion */}
-                <div className="space-y-2 animate-fade-in">
-                  <label
-                    htmlFor="complete-years"
-                    className="flex items-center text-sm font-medium text-gray-700"
-                  >
-                    <FiAward className="mr-2 text-blue-500" />
-
-                    {alldata.currently_pursuing === "Yes"
-                      ? "Year of Completion (Expacted)"
-                      : "Year of Completion "}
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="e.g. 2023"
-                    id="complete-years"
-                    name="complete_years"
-                    value={alldata.complete_years || ""}
-                    onChange={handleYearChange}
-                    min="1900"
-                    max={new Date().getFullYear() + 5}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
-                    disabled={alldata.currently_pursuing === "Yes"}
-                  />
-                </div>
-
-                {/* Completion Month Dropdown */}
-                <div className="space-y-2 animate-fade-in">
-                  <label
-                    htmlFor="complete-month-select"
-                    className="flex items-center text-sm font-medium text-gray-700"
-                  >
-                    <FiAward className="mr-2 text-blue-500" />
-                    Completion Month
-                  </label>
-                  <Select
-                    inputId="complete-month-select"
-                    options={monthOptions}
-                    value={monthOptions.find(
-                      (option) => option.value === alldata.complete_month
-                    )}
-                    onChange={(selected) =>
-                      handelinputs({
-                        target: {
-                          name: "complete_month",
-                          value: selected ? selected.value : "",
-                        },
-                      })
-                    }
-                    styles={customStyles}
-                    className="w-full text-gray-700"
-                    menuPortalTarget={document.body}
-                    placeholder="Select Month"
-                    classNamePrefix="react-select"
-                  />
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Degree Program Dropdown */}
-                <div className="space-y-2 animate-fade-in">
-                  <label
-                    htmlFor="degree-program-select"
-                    className="flex items-center text-sm font-medium text-gray-700"
-                  >
-                    <FiAward className="mr-2 text-blue-500" />
-                    Degree Program
-                  </label>
-                  <Select
-                    inputId="degree-program-select"
-                    options={qualificationOptions}
-                    value={qualificationOptions.find(
-                      (option) => option.value === alldata.education_level
-                    )}
-                    onChange={(selected) =>
-                      handelinputs({
-                        target: {
-                          name: "education_level",
-                          value: selected ? selected.value : "",
-                        },
-                      })
-                    }
-                    placeholder={
-                      loadingQualifications
-                        ? "Loading..."
-                        : "Select Degree Program"
-                    }
-                    classNamePrefix="react-select"
-                    styles={customStyles}
-                    className="w-full text-gray-700"
-                    menuPortalTarget={document.body}
-                  />
-                </div>
-
-                {/* Specialization Dropdown */}
-                <div className="space-y-2 animate-fade-in">
-                  <label
-                    htmlFor="specialization-select"
-                    className="flex items-center text-sm font-medium text-gray-700"
-                  >
-                    <FiAward className="mr-2 text-blue-500" />
-                    Specialization
-                  </label>
-                  <Select
-                    inputId="specialization-select"
-                    options={specializationOptions}
-                    value={specializationOptions.find(
-                      (option) => option.value === alldata.specialization
-                    )}
-                    onChange={(selected) =>
-                      handelinputs({
-                        target: {
-                          name: "specialization",
-                          value: selected ? selected.value : "",
-                        },
-                      })
-                    }
-                    placeholder={
-                      loadingSpecializations
-                        ? "Loading..."
-                        : "Select Specialization"
-                    }
-                    classNamePrefix="react-select"
-                    styles={customStyles}
-                    className="w-full text-gray-700"
-                    menuPortalTarget={document.body}
-                    isDisabled={
-                      loadingSpecializations || !alldata.education_level
-                    }
-                  />
-                </div>
-
-                {/* University/School Name Field */}
-                <div className="space-y-2 animate-fade-in">
-                  <label
-                    htmlFor="college-name"
-                    className="flex items-center text-sm font-medium text-gray-700"
-                  >
-                    <FiBook className="mr-2 text-blue-500" />
-                    University/School Name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Harvard University"
-                    id="college-name"
-                    name="college_name"
-                    value={alldata.college_name || ""}
-                    onChange={handelinputs}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
-                  />
-                </div>
-
-                {/* Year of Completion */}
-                <div className="space-y-2 animate-fade-in">
-                  <label
-                    htmlFor="complete-years"
-                    className="flex items-center text-sm font-medium text-gray-700"
-                  >
-                    <FiAward className="mr-2 text-blue-500" />
-                    {alldata.currently_pursuing === "Yes"
-                      ? "Year of Completion (Expacted)"
-                      : "Year of Completion "}
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="e.g. 2023"
-                    id="complete-years"
-                    name="complete_years"
-                    value={alldata.complete_years || ""}
-                    onChange={handleYearChange}
-                    min="1900"
-                    max={new Date().getFullYear() + 5}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
-                  />
-                </div>
-
-                {/* Completion Month Dropdown */}
-                <div className="space-y-2 animate-fade-in">
-                  <label
-                    htmlFor="complete-month-select"
-                    className="flex items-center text-sm font-medium text-gray-700"
-                  >
-                    <FiAward className="mr-2 text-blue-500" />
-                    Completion Month
-                  </label>
-                  <Select
-                    inputId="complete-month-select"
-                    options={monthOptions}
-                    value={monthOptions.find(
-                      (option) => option.value === alldata.complete_month
-                    )}
-                    onChange={(selected) =>
-                      handelinputs({
-                        target: {
-                          name: "complete_month",
-                          value: selected ? selected.value : "",
-                        },
-                      })
-                    }
-          
-                    className="w-full"
-                    classNamePrefix="react-select"
-                       styles={customStyles}
-        
-                    menuPortalTarget={document.body}
-                    placeholder="Select Month"
-
-                    isDisabled={alldata.currently_pursuing === "Yes"}
-                  />
-                </div>
-
-                {/* School Medium Dropdown */}
-                <div className="space-y-2 animate-fade-in">
-                  <label
-                    htmlFor="school-medium-select"
-                    className="flex items-center text-sm font-medium text-gray-700"
-                  >
-                    <FiBook className="mr-2 text-blue-500" />
-                    School Medium
-                  </label>
-                  <Select
-                    inputId="school-medium-select"
-                    styles={customStyles}
-                    className="w-full text-gray-700"
-                    menuPortalTarget={document.body}
-                    options={schoolMediumOptions}
-                    value={schoolMediumOptions.find(
-                      (option) => option.value === alldata.school_medium
-                    )}
-                    onChange={(selected) =>
-                      handelinputs({
-                        target: {
-                          name: "school_medium",
-                          value: selected ? selected.value : "",
-                        },
-                      })
-                    }
-                    placeholder="Select School Medium"
-                    classNamePrefix="react-select"
-                  />
-                </div>
-              </>
-            )}
+            {/* Completion Month */}
+            <div>
+              <label className="flex items-center font-medium text-gray-700">
+                <FiAward className="mr-2 text-blue-500" />
+                Completion Month
+              </label>
+              <Select
+                options={monthOptions}
+                value={monthOptions.find((o) => o.value === alldata?.postGraduation?.complete_month)}
+                onChange={(opt) =>
+                  handelinputs({
+                    target: { name: "postGraduation.complete_month", value: opt?.value ?? "" },
+                  })
+                }
+                styles={customSelectStyles}
+                menuPortalTarget={document.body}
+              />
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* API Error */}
+      {apiError && (
+        <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-lg">{apiError}</div>
+      )}
     </div>
   );
 };

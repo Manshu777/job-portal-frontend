@@ -89,6 +89,8 @@ const First = ({ alldata, handelinputs, handelgender,errors }) => {
   }),
 };
 
+
+console.log(alldata)
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
       <div className="p-6 space-y-6">
@@ -182,47 +184,49 @@ const First = ({ alldata, handelinputs, handelgender,errors }) => {
 
         {/* State Selection */}
         <div className="animate-fade-in">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            State
-          </label>
-          <Select
-            options={states}
-          value={selectedState}
-          onChange={handleStateChange}
-          placeholder="Select State"
-          styles={customStyles}
-          isClearable
-          className="text-gray-700"
-
-      
-          />
-
-           {errors.state && (
-          <p className="text-red-500 text-sm">{errors.state}</p>
-        )}
-        </div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    State
+  </label>
+  <Select
+    options={states}
+    value={
+      states.find(
+        (opt) =>
+          opt.value === alldata.state || opt.label === alldata.state
+      ) || selectedState
+    }
+    onChange={handleStateChange}
+    placeholder="Select State"
+    styles={customStyles}
+    isClearable
+    className="text-gray-700"
+  />
+  {errors.state && <p className="text-red-500 text-sm">{errors.state}</p>}
+</div>
 
         {/* City Selection */}
-        <div className="animate-fade-in">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            City
-          </label>
-          <Select
-            options={cities}
-            value={selectedCity}
-            onChange={handleCityChange}
-            placeholder="Select City"
-            styles={customStyles}
-            isClearable
-            isDisabled={!selectedState}
+       <div className="animate-fade-in">
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    City
+  </label>
+  <Select
+    options={cities}
+    value={
+      cities.find(
+        (opt) =>
+          opt.value === alldata.city || opt.label === alldata.city
+      ) || selectedCity
+    }
+    onChange={handleCityChange}
+    placeholder="Select City"
+    styles={customStyles}
+    isClearable
+    isDisabled={!selectedState}
+    className="text-gray-700"
+  />
+  {errors.city && <p className="text-red-500 text-sm">{errors.city}</p>}
+</div>
 
-            className="text-gray-700"
-          />
-
-          {errors.city && (
-          <p className="text-red-500 text-sm">{errors.city}</p>
-        )}
-        </div>
 
         {/* WhatsApp Checkbox */}
         <div

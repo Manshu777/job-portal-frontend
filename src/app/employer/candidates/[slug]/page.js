@@ -1,26 +1,23 @@
 "use client";
 
-import { useState, Suspense, useEffect, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useState, Suspense, useEffect } from "react";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Sidebar from "@/app/components/Sidebar";
 import axios from "axios";
-import { baseurl,storageLink } from "@/app/components/common";
+import { baseurl, storageLink } from "@/app/components/common";
 import {
   FaMapMarkerAlt,
   FaGlobe,
   FaPhone,
   FaCoins,
   FaFileAlt,
-  FaKey,
-  FaBan,
   FaUser,
   FaGraduationCap,
-  FaLanguage,
-  FaCity,
   FaBriefcase,
   FaClock,
 } from "react-icons/fa";
 import { BiMedal } from "react-icons/bi";
+
 // CandidateCard and SkeletonLoader components remain unchanged
 const ProfileDetails = ({ icon, label, value }) => (
   <div className="flex items-center gap-3">
@@ -37,9 +34,6 @@ const CandidateCard = ({ candidate }) => {
   const [phoneNumber, setPhoneNumber] = useState(candidate.number || "xxxxxxx");
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-
-  // console.log("candidatecandidateid", slug);
 
   function formatIndianSalary(amount) {
     const num = Number(amount);
@@ -529,7 +523,7 @@ const CandidateCard = ({ candidate }) => {
               <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
                 <FaClock className="text-[#02325a]" /> Activity
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class-Div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <p className="text-sm text-gray-600">
                   <strong>Active User:</strong>{" "}
                   {candidate.active_user ? "Yes" : "No"}
@@ -627,8 +621,8 @@ const SkeletonLoader = () => (
 
 const CandidateList = () => {
   const router = useRouter();
-  // const { jobId } = useParams();
-    const  {slug} = useParams();
+  const { slug } = useParams();
+  const searchParams = useSearchParams();
   const [isLoggedIn, setIsLoggedIn] = useState({ id: null });
   const [jobs, setJobs] = useState([]);
   const [activeTab, setActiveTab] = useState("matches");
@@ -642,6 +636,16 @@ const CandidateList = () => {
     total: 0,
     per_page: 10,
   });
+
+  // Set initial activeTab based on query parameter
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "matches" || tab === "applied") {
+      setActiveTab(tab);
+    } else {
+      setActiveTab("matches"); // Default to matches if no valid tab is specified
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const checkLogin = async () => {
@@ -678,10 +682,10 @@ const CandidateList = () => {
 
       try {
         const token = localStorage.getItem("employerToken");
-        const jobId = 122; // Replace with dynamic jobId from useParams if needed
+        const jobId = slug; // Use slug as jobId
 
         const dashboardResponse = await axios.get(
-          `${baseurl}/jobs/${slug}/dashboard`,
+          `${baseurl}/jobs/${jobId}/dashboard`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -706,14 +710,14 @@ const CandidateList = () => {
     };
 
     fetchJobs();
-  }, [isLoggedIn?.id]);
+  }, [isLoggedIn?.id, slug]);
 
   // Normalize candidates data to ensure consistent structure
   const candidates = activeTab === "matches"
     ? jobs[0]?.matches || []
-    : (jobs[0]?.applications || []).map(app => ({
+    : (jobs[0]?.applications || []).map((app) => ({
         ...app.candidate,
-        number_revealed: app.candidate.number_revealed || false, // Ensure number_revealed is included
+        number_revealed: app.candidate.number_revealed || false,
       }));
 
   const fetchCandidates = async (page = 1, perPage = pagination.per_page) => {

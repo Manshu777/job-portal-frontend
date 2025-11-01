@@ -11,7 +11,7 @@ import { HiDotsVertical, HiTrash } from "react-icons/hi";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
-
+import { SlRefresh } from "react-icons/sl";
 const EmployerDashboard = () => {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -26,6 +26,7 @@ const EmployerDashboard = () => {
   const [isVisible, setIsVisible] = useState(true);
   const [jobs, setJobs] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // New loading state
   const [formData, setFormData] = useState({
     jobTitle: "",
     description: "",
@@ -41,8 +42,12 @@ const EmployerDashboard = () => {
 
   useEffect(() => {
     const checkLogin = async () => {
+      setIsLoading(true);
       const token = localStorage.getItem("employerToken");
-      if (!token) return;
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
 
       try {
         const res = await axios.get(`${baseurl}/employer/profile`, {
@@ -54,10 +59,14 @@ const EmployerDashboard = () => {
         if (res.data && res.data.success) {
           setIsLoggedIn(res.data.data);
           setIsVisible(res.data.data.is_blocked);
+        } else {
+          setIsLoggedIn(false);
         }
       } catch (err) {
         console.error("Not logged in or invalid token", err);
         setIsLoggedIn(false);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -68,6 +77,7 @@ const EmployerDashboard = () => {
     const fetchJobs = async () => {
       if (!isLoggedIn.id) return;
 
+      setIsLoading(true);
       try {
         const token = localStorage.getItem("employerToken");
         const response = await axios.get(`${baseurl}/jobs/employer/${isLoggedIn.id}`, {
@@ -109,6 +119,8 @@ const EmployerDashboard = () => {
         }
       } catch (error) {
         console.error("Error fetching jobs:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchJobs();
@@ -380,30 +392,40 @@ const EmployerDashboard = () => {
             </div>
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <MetricCard
-              title="Total Job Visits"
-              value="12,456"
-              change={12}
-              isPositive={true}
-            />
-            <MetricCard
-              title="Total Applications"
-              value="1,234"
-              change={-5}
-              isPositive={false}
-            />
-            <MetricCard
-              title="Active Jobs"
-              value="45"
-              change={8}
-              isPositive={true}
-            />
-            <MetricCard
-              title="Pending Reviews"
-              value="28"
-              change={0}
-              isPositive={true}
-            />
+            {isLoading ? (
+              <>
+                {[...Array(4)].map((_, i) => (
+                  <SkeletonMetricCard key={i} />
+                ))}
+              </>
+            ) : (
+              <>
+                <MetricCard
+                  title="Total Job Visits"
+                  value="12,456"
+                  change={12}
+                  isPositive={true}
+                />
+                <MetricCard
+                  title="Total Applications"
+                  value="1,234"
+                  change={-5}
+                  isPositive={false}
+                />
+                <MetricCard
+                  title="Active Jobs"
+                  value="45"
+                  change={8}
+                  isPositive={true}
+                />
+                <MetricCard
+                  title="Pending Reviews"
+                  value="28"
+                  change={0}
+                  isPositive={true}
+                />
+              </>
+            )}
           </div>
         </div>
         <div className="mb-8 px-[2%] py-5">
@@ -411,7 +433,13 @@ const EmployerDashboard = () => {
             Your Job Postings
           </h2>
           <div className="grid grid-cols-1 gap-6">
-            {jobs.length > 0 ? (
+            {isLoading ? (
+              <div className="space-y-6">
+                {[...Array(3)].map((_, i) => (
+                  <SkeletonJobCard key={i} />
+                ))}
+              </div>
+            ) : jobs.length > 0 ? (
               jobs.map((job) => (
                 <NewJobCard key={job.id} setJobs={setJobs} job={job} />
               ))
@@ -424,6 +452,49 @@ const EmployerDashboard = () => {
     </div>
   );
 };
+
+// Skeleton Loader for Metric Cards
+const SkeletonMetricCard = () => (
+  <div className="bg-white p-6 rounded-lg shadow-md animate-pulse">
+    <div className="h-4 bg-gray-300 rounded w-1/2 mb-2"></div>
+    <div className="flex items-center justify-between">
+      <div className="h-6 bg-gray-300 rounded w-1/3"></div>
+      <div className="flex items-center gap-2">
+        <div className="h-6 w-6 bg-gray-300 rounded-full"></div>
+        <div className="h-4 bg-gray-300 rounded w-10"></div>
+      </div>
+    </div>
+  </div>
+);
+
+// Skeleton Loader for Job Cards
+const SkeletonJobCard = () => (
+  <div className="w-full flex bg-white shadow-lg px-5 py-6 rounded-md animate-pulse">
+    <div className="w-full flex">
+      <div className="w-[50%]">
+        <div className="h-6 bg-gray-300 rounded w-2/3 mb-2"></div>
+        <div className="flex my-1 text-md gap-2">
+          <div className="h-4 bg-gray-300 rounded w-20"></div>
+          <div className="h-4 bg-gray-300 rounded w-24"></div>
+          <div className="h-4 bg-gray-300 rounded w-16"></div>
+        </div>
+      </div>
+      <div className="w-[15%] flex flex-col justify-start">
+        <div className="h-6 bg-gray-300 rounded w-10 mb-1"></div>
+        <div className="h-4 bg-gray-300 rounded w-20 mb-2"></div>
+        <div className="h-8 bg-gray-300 rounded w-24"></div>
+      </div>
+      <div className="w-[15%] flex flex-col justify-start">
+        <div className="h-6 bg-gray-300 rounded w-10 mb-1"></div>
+        <div className="h-4 bg-gray-300 rounded w-20 mb-2"></div>
+        <div className="h-8 bg-gray-300 rounded w-24"></div>
+      </div>
+      <div className="w-[20%] flex justify-end items-center">
+        <div className="h-6 w-6 bg-gray-300 rounded-full"></div>
+      </div>
+    </div>
+  </div>
+);
 
 const MetricCard = ({ title, value, change, isPositive }) => {
   return (
@@ -577,11 +648,11 @@ const NewJobCard = ({ job, setJobs }) => {
   };
 
   const handleViewMatches = () => {
-    router.push(`/employer/candidates/${job.id}`);
+    router.push(`/employer/candidates/${job.id}?tab=matches`);
   };
 
   const handleViewApplications = () => {
-    router.push(`/employer/job/${job.id}/applications`);
+    router.push(`/employer/candidates/${job.id}?tab=applied`);
   };
 
   return (
@@ -641,29 +712,19 @@ const NewJobCard = ({ job, setJobs }) => {
             </MenuButton>
             <MenuItems className="absolute right-0 mt-2 w-56 origin-top-right bg-white border border-gray-200 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none p-1">
               <MenuItem>
-                {({ active }) => (
-                  <button
-                    onClick={handleRefreshJob}
-                    className={`${
-                      active ? "bg-blue-50 text-blue-700" : "text-gray-700"
-                    } block w-full text-left px-4 py-2.5 text-sm font-medium rounded-md transition-colors duration-150`}
-                  >
-                    Refresh Job
-                  </button>
-                )}
-              </MenuItem>
-              <MenuItem>
-                {({ active }) => (
-                  <button
-                    onClick={handleEditJob}
-                    className={`${
-                      active ? "bg-blue-50 text-blue-700" : "text-gray-700"
-                    } block w-full text-left px-4 py-2.5 text-sm font-medium rounded-md transition-colors duration-150`}
-                  >
-                    Edit Job
-                  </button>
-                )}
-              </MenuItem>
+                             {({ active }) => (
+                               <button
+                                 onClick={handleRefreshJob}
+                                 className={`${
+                                   active ? "bg-blue-50 text-blue-700" : "text-gray-700"
+                                 } flex items-center w-full text-left px-4 py-2.5 text-sm font-medium rounded-md transition-colors duration-150`}
+                               >
+                                   <SlRefresh className="h-4 w-4 mr-2" />
+                                 Refresh Job
+                               </button>
+                             )}
+                           </MenuItem>
+             
               <MenuItem>
                 {({ active }) => (
                   <button

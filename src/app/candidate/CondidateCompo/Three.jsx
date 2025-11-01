@@ -17,7 +17,7 @@ const Three = ({ alldata, handelinputs,errors }) => {
   const [locationSuggestions, setLocationSuggestions] = useState([]);
   const jobRoleDropdownRef = useRef(null);
   const locationDropdownRef = useRef(null);
-  const baseurl = "http://147.93.18.63:8001/api/v1";
+  const baseurl = "http://127.0.0.1:8000/api/v1";
 
   // Debounce function
   const debounce = (func, wait) => {
@@ -141,7 +141,7 @@ const fetchLocations = useCallback(
   // Handle job role selection
   const handleJobRoleSelect = (result) => {
     handelinputs({
-      target: { name: "job_roles", value: result.value },
+      target: { name: "job_title", value: result.value },
     });
     setJobRoleSearch(result.value);
     setShowJobRoleDropdown(false);
@@ -300,7 +300,7 @@ const fetchLocations = useCallback(
               <div className="relative">
                 <input
                   type="text"
-                  name="job_roles"
+                  name="job_title"
                   value={jobRoleSearch}
                   onChange={handleJobRoleSearch}
                   onKeyDown={(e) => {

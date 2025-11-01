@@ -27,6 +27,12 @@ import {
   FaTimes,
   FaImage,
   FaFilePdf,
+  FaMapMarkerAlt,
+  FaEnvelope,
+  FaCalendarAlt,
+  FaIndustry,
+  FaDollarSign,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 import { IoIosDocument } from "react-icons/io";
 import { FiSettings, FiEdit2, FiSave, FiX } from "react-icons/fi";
@@ -36,20 +42,32 @@ import Link from "next/link";
 
 const Dashboard = () => {
   const router = useRouter();
-
   const [userData, setUserData] = useState({
     full_name: "",
     dob: "",
     gender: "",
     number: "",
+    email: "",
+    address: "",
+    city: "",
+    state: "",
     degree: "",
+    specialization: "",
     college_name: "",
+    education_level: "",
+    highest_education: "",
+    currently_pursuing: "",
     passing_marks: "",
     experience_years: "",
-    job_roles: [],
-    job_title: "",
     experience_months: "",
+    experience_level: "",
+    is_working: "",
+    notice_period: "",
+    job_title: "",
+    job_roles: [],
+    preferred_job_titles: [],
     company_name: "",
+    current_salary: "",
     prefers_night_shift: false,
     prefers_day_shift: true,
     work_from_home: false,
@@ -60,6 +78,10 @@ const Dashboard = () => {
     password: "",
     profile_pic: "",
     resume: "",
+    english_level: "",
+    preferred_locations: "",
+    preferred_languages: [],
+    educations: [],
   });
   const [tempData, setTempData] = useState(userData);
   const [profilePicFile, setProfilePicFile] = useState(null);
@@ -73,9 +95,11 @@ const Dashboard = () => {
   const [editMode, setEditMode] = useState(false);
   const [newSkill, setNewSkill] = useState("");
   const [newJobRole, setNewJobRole] = useState("");
+  const [newPreferredJobTitle, setNewPreferredJobTitle] = useState("");
+  const [newPreferredLanguage, setNewPreferredLanguage] = useState("");
   const [error, setError] = useState("");
-
-  const storageLink = 'http://147.93.18.63:8001/storage';
+  const [alldata, setAlldata] = useState({}); // Add this state for education data
+  const storageLink = 'http://127.0.0.1:8000/storage';
 
   // File validation constraints
   const MAX_PROFILE_PIC_SIZE = 2 * 1024 * 1024; // 2MB
@@ -85,7 +109,6 @@ const Dashboard = () => {
 
   const validateFile = (file, type) => {
     if (!file) return true;
-
     if (type === 'profilePic') {
       if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
         setFileErrors(prev => ({ ...prev, profilePic: "Only JPG, JPEG, or PNG files are allowed" }));
@@ -108,6 +131,12 @@ const Dashboard = () => {
     return true;
   };
 
+
+  const formatSalary = (salary) => {
+    if (!salary) return "Not provided";
+    return `₹${parseFloat(salary).toLocaleString('en-IN')}/month`;
+  };
+
   const fetchData = async (token) => {
     if (!token) {
       router.push("/");
@@ -120,15 +149,46 @@ const Dashboard = () => {
           },
         });
         const data = {
-          ...response.data,
-          job_roles: typeof response.data.job_roles === 'string'
-            ? JSON.parse(response.data.job_roles || '[]')
-            : response.data.job_roles || [],
-          skills: typeof response.data.skills === 'string'
-            ? JSON.parse(response.data.skills || '[]')
-            : response.data.skills || [],
+          ...response.data.data, // Note: Your API returns data in a data object
+          job_roles: typeof response.data.data.job_roles === 'string'
+            ? JSON.parse(response.data.data.job_roles || '[]')
+            : response.data.data.job_roles || [],
+          skills: typeof response.data.data.skills === 'string'
+            ? JSON.parse(response.data.data.skills || '[]')
+            : response.data.data.skills || [],
+          preferred_languages: typeof response.data.data.preferred_languages === 'string'
+            ? JSON.parse(response.data.data.preferred_languages || '[]')
+            : response.data.data.preferred_languages || [],
+          preferred_job_titles: typeof response.data.data.preferred_job_titles === 'string'
+            ? JSON.parse(response.data.data.preferred_job_titles || '[]')
+            : response.data.data.preferred_job_titles || [],
         };
-
+        
+        // Handle education data
+        const educationData = {};
+        if (data.educations && data.educations.length > 0) {
+          data.educations.forEach(edu => {
+            if (edu.education_type === 'graduation') {
+              educationData.graduation = {
+                education_level: edu.education_level,
+                specialization: edu.specialization,
+                college_name: edu.college_name,
+                complete_years: edu.complete_years,
+                complete_month: edu.complete_month,
+              };
+            } else if (edu.education_type === 'post_graduation') {
+              educationData.postGraduation = {
+                education_level: edu.education_level,
+                specialization: edu.specialization,
+                college_name: edu.college_name,
+                complete_years: edu.complete_years,
+                complete_month: edu.complete_month,
+              };
+            }
+          });
+        }
+        setAlldata(educationData);
+        
         console.log("Fetched user data:", data);
         setUserData(data);
         setTempData(data);
@@ -160,6 +220,25 @@ const Dashboard = () => {
     }
   }, [profilePicFile]);
 
+const formatDate = (dateString) => {
+  if (!dateString) return "Not provided";
+
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "Invalid date";
+
+  const day = date.getDate();
+  const month = date.toLocaleString('en-GB', { month: 'long' });
+  const year = date.getFullYear();
+
+  // Add ordinal suffix
+  const ordinalSuffix = (n) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  };
+
+  return `${ordinalSuffix(day)} ${month}, ${year}`;
+};
   useEffect(() => {
     if (resumeFile && !validateFile(resumeFile, 'resume')) {
       setResumeFile(null);
@@ -210,23 +289,68 @@ const Dashboard = () => {
     setTempData({ ...tempData, job_roles: updatedJobRoles });
   };
 
+  const addPreferredJobTitle = () => {
+    if (newPreferredJobTitle.trim() && tempData.preferred_job_titles.length < 5) {
+      setTempData({
+        ...tempData,
+        preferred_job_titles: [...tempData.preferred_job_titles, newPreferredJobTitle.trim()],
+      });
+      setNewPreferredJobTitle("");
+    }
+  };
+
+  const removePreferredJobTitle = (index) => {
+    const updatedTitles = [...tempData.preferred_job_titles];
+    updatedTitles.splice(index, 1);
+    setTempData({ ...tempData, preferred_job_titles: updatedTitles });
+  };
+
+  const addPreferredLanguage = () => {
+    if (newPreferredLanguage.trim() && tempData.preferred_languages.length < 5) {
+      setTempData({
+        ...tempData,
+        preferred_languages: [...tempData.preferred_languages, newPreferredLanguage.trim()],
+      });
+      setNewPreferredLanguage("");
+    }
+  };
+
+  const removePreferredLanguage = (index) => {
+    const updatedLanguages = [...tempData.preferred_languages];
+    updatedLanguages.splice(index, 1);
+    setTempData({ ...tempData, preferred_languages: updatedLanguages });
+  };
+
   const saveChanges = async () => {
     if (fileErrors.profilePic || fileErrors.resume) {
       setError("Please fix file upload errors before saving.");
       return;
     }
-
     try {
       const token = localStorage.getItem("port_tok");
       const formData = new FormData();
-
+      
+      // Add basic fields
       for (const key in tempData) {
-        if (['skills', 'job_roles'].includes(key)) {
+        if (['skills', 'job_roles', 'preferred_job_titles', 'preferred_languages'].includes(key)) {
           formData.append(key, JSON.stringify(tempData[key]));
         } else if (tempData[key] !== null && tempData[key] !== undefined) {
           formData.append(key, tempData[key]);
         }
       }
+
+      // Add education data
+      Object.entries(alldata).forEach(([key, value]) => {
+        if (key === "graduation" || key === "postGraduation") {
+          Object.entries(value).forEach(([subKey, subVal]) => {
+            formData.append(`${key}.${subKey}`, subVal ?? "");
+          });
+        } else if (Array.isArray(value)) {
+          value.forEach((v) => formData.append(`${key}[]`, v));
+        } else {
+          formData.append(key, value ?? "");
+        }
+      });
 
       if (profilePicFile) {
         formData.append('profile_pic', profilePicFile);
@@ -234,7 +358,7 @@ const Dashboard = () => {
       if (resumeFile) {
         formData.append('resume', resumeFile);
       }
-
+     
       const response = await axios.post(
         `${baseurl}/updatecandidate/${token}`,
         formData,
@@ -304,14 +428,12 @@ const Dashboard = () => {
           </div>
         </div>
       </header>
-
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         {error && (
           <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
             {error}
           </div>
         )}
-
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
           <div>
             <h2 className="text-2xl font-bold mb-2">
@@ -352,7 +474,6 @@ const Dashboard = () => {
             </button>
           )}
         </div>
-
         <div className="flex border-b border-gray-200 mb-6">
           <button
             onClick={() => setActiveTab("profile")}
@@ -385,7 +506,6 @@ const Dashboard = () => {
             <IoIosDocument className="mr-2" /> Build Your CV
           </button>
         </div>
-
         {activeTab === "profile" && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
@@ -394,7 +514,6 @@ const Dashboard = () => {
                 icon={<FaUser className="text-blue-500" />}
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {console.log("userData",userData)}
                   <EditableField
                     editMode={editMode}
                     icon={<FaUser />}
@@ -409,7 +528,7 @@ const Dashboard = () => {
                     label="Date of Birth"
                     name="dob"
                     type="date"
-                    value={editMode ? tempData.dob : userData.dob}
+                    value={editMode ? tempData.dob : formatDate(userData.dob)}
                     onChange={handleInputChange}
                   />
                   <EditableField
@@ -428,6 +547,31 @@ const Dashboard = () => {
                     name="number"
                     type="tel"
                     value={editMode ? tempData.number : userData.number}
+                    onChange={handleInputChange}
+                  />
+                  <EditableField
+                    editMode={editMode}
+                    icon={<FaEnvelope />}
+                    label="Email"
+                    name="email"
+                    type="email"
+                    value={editMode ? tempData.email : userData.email}
+                    onChange={handleInputChange}
+                  />
+                  <EditableField
+                    editMode={editMode}
+                    icon={<FaMapMarkerAlt />}
+                    label="City"
+                    name="city"
+                    value={editMode ? tempData.city : userData.city}
+                    onChange={handleInputChange}
+                  />
+                  <EditableField
+                    editMode={editMode}
+                    icon={<FaMapMarkerAlt />}
+                    label="State"
+                    name="state"
+                    value={editMode ? tempData.state : userData.state}
                     onChange={handleInputChange}
                   />
                   <div className="col-span-2">
@@ -479,36 +623,86 @@ const Dashboard = () => {
                 title="Education"
                 icon={<FaGraduationCap className="text-blue-500" />}
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <EditableField
-                    editMode={editMode}
-                    icon={<FaGraduationCap />}
-                    label="Degree"
-                    name="degree"
-                    value={editMode ? tempData.degree : userData.degree}
-                    onChange={handleInputChange}
-                  />
-                  <EditableField
-                    editMode={editMode}
-                    icon={<FaUniversity />}
-                    label="College Name"
-                    name="college_name"
-                    value={
-                      editMode ? tempData.college_name : userData.college_name
-                    }
-                    onChange={handleInputChange}
-                  />
-                  <EditableField
-                    editMode={editMode}
-                    icon={<FaGraduationCap />}
-                    label="Passing Marks"
-                    name="passing_marks"
-                    type="number"
-                    value={
-                      editMode ? tempData.passing_marks : userData.passing_marks
-                    }
-                    onChange={handleInputChange}
-                  />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <EditableField
+                      editMode={editMode}
+                      icon={<FaGraduationCap />}
+                      label="Highest Education"
+                      name="highest_education"
+                      value={editMode ? tempData.highest_education : userData.highest_education}
+                      onChange={handleInputChange}
+                    />
+                    <EditableField
+                      editMode={editMode}
+                      icon={<FaLanguage />}
+                      label="English Level"
+                      name="english_level"
+                      value={editMode ? tempData.english_level : userData.english_level}
+                      onChange={handleInputChange}
+                      selectOptions={["Beginner", "Intermediate", "Advanced", "Fluent"]}
+                    />
+                  </div>
+                  
+                  {/* Graduation Education */}
+                  {alldata.graduation && (
+                    <div className="border-t pt-4">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <FaGraduationCap className="mr-2" />
+                        Graduation Details
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-500">Degree:</span>
+                          <p className="font-medium">{alldata.graduation.education_level || "Not provided"}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Specialization:</span>
+                          <p className="font-medium">{alldata.graduation.specialization || "Not provided"}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">College:</span>
+                          <p className="font-medium">{alldata.graduation.college_name || "Not provided"}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Completion:</span>
+                          <p className="font-medium">
+                            {alldata.graduation.complete_month} {alldata.graduation.complete_years || "Not provided"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Post Graduation Education */}
+                  {alldata.postGraduation && (
+                    <div className="border-t pt-4">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <FaGraduationCap className="mr-2" />
+                        Post Graduation Details
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-500">Degree:</span>
+                          <p className="font-medium">{alldata.postGraduation.education_level || "Not provided"}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Specialization:</span>
+                          <p className="font-medium">{alldata.postGraduation.specialization || "Not provided"}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">College:</span>
+                          <p className="font-medium">{alldata.postGraduation.college_name || "Not provided"}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Completion:</span>
+                          <p className="font-medium">
+                            {alldata.postGraduation.complete_month} {alldata.postGraduation.complete_years || "Not provided"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </DashboardCard>
 
@@ -520,14 +714,19 @@ const Dashboard = () => {
                   <EditableField
                     editMode={editMode}
                     icon={<FaClock />}
-                    label="Experience (Years)"
+                    label="Experience Level"
+                    name="experience_level"
+                    value={editMode ? tempData.experience_level : userData.experience_level}
+                    onChange={handleInputChange}
+                    selectOptions={["Fresh", "Experienced", "Senior"]}
+                  />
+                  <EditableField
+                    editMode={editMode}
+                    icon={<FaClock />}
+                    label="Total Experience (Years)"
                     name="experience_years"
                     type="number"
-                    value={
-                      editMode
-                        ? tempData.experience_years
-                        : userData.experience_years
-                    }
+                    value={editMode ? tempData.experience_years : userData.experience_years}
                     onChange={handleInputChange}
                   />
                   <EditableField
@@ -536,17 +735,13 @@ const Dashboard = () => {
                     label="Experience (Months)"
                     name="experience_months"
                     type="number"
-                    value={
-                      editMode
-                        ? tempData.experience_months
-                        : userData.experience_months
-                    }
+                    value={editMode ? tempData.experience_months : userData.experience_months}
                     onChange={handleInputChange}
                   />
                   <EditableField
                     editMode={editMode}
                     icon={<FaBriefcase />}
-                    label="Job Title"
+                    label="Current Job Title"
                     name="job_title"
                     value={editMode ? tempData.job_title : userData.job_title}
                     onChange={handleInputChange}
@@ -554,19 +749,32 @@ const Dashboard = () => {
                   <EditableField
                     editMode={editMode}
                     icon={<FaBuilding />}
-                    label="Company Name"
+                    label="Current Company"
                     name="company_name"
-                    value={
-                      editMode ? tempData.company_name : userData.company_name
-                    }
+                    value={editMode ? tempData.company_name : userData.company_name}
+                    onChange={handleInputChange}
+                  />
+                  <EditableField
+                    editMode={editMode}
+                    icon={<FaDollarSign />}
+                    label="Current Salary"
+                    name="current_salary"
+                    type="number"
+                    value={editMode ? tempData.current_salary : userData.current_salary}
+                    onChange={handleInputChange}
+                  />
+                  <EditableField
+                    editMode={editMode}
+                    icon={<FaCalendarAlt />}
+                    label="Notice Period"
+                    name="notice_period"
+                    value={editMode ? tempData.notice_period : userData.notice_period}
                     onChange={handleInputChange}
                   />
                   <div className="md:col-span-2">
                     <div className="flex items-center mb-2">
                       <FaBriefcase className="text-gray-500 mr-2" />
-                      <span className="text-sm font-medium text-gray-500">
-                        Job Roles
-                      </span>
+                      <span className="text-sm font-medium text-gray-500">Current Job Roles</span>
                       {editMode && (
                         <span className="text-xs text-gray-500 ml-auto">
                           {tempData.job_roles.length}/10
@@ -586,10 +794,7 @@ const Dashboard = () => {
                           />
                           <button
                             onClick={addJobRole}
-                            disabled={
-                              !newJobRole.trim() ||
-                              tempData.job_roles.length >= 10
-                            }
+                            disabled={!newJobRole.trim() || tempData.job_roles.length >= 10}
                             className="bg-blue-500 text-white px-3 py-2 rounded-r-lg hover:bg-blue-600 disabled:bg-gray-300"
                           >
                             Add
@@ -597,10 +802,7 @@ const Dashboard = () => {
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {tempData.job_roles.map((role, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full"
-                            >
+                            <div key={index} className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
                               {role}
                               <button
                                 onClick={() => removeJobRole(index)}
@@ -616,17 +818,69 @@ const Dashboard = () => {
                       <div className="flex flex-wrap gap-2">
                         {userData.job_roles.length > 0 ? (
                           userData.job_roles.map((role, index) => (
-                            <span
-                              key={index}
-                              className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
-                            >
+                            <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
                               {role}
                             </span>
                           ))
                         ) : (
-                          <span className="text-gray-500">
-                            No job roles added
-                          </span>
+                          <span className="text-gray-500">No job roles added</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="md:col-span-2">
+                    <div className="flex items-center mb-2">
+                      <FaBriefcase className="text-gray-500 mr-2" />
+                      <span className="text-sm font-medium text-gray-500">Preferred Job Titles</span>
+                      {editMode && (
+                        <span className="text-xs text-gray-500 ml-auto">
+                          {tempData.preferred_job_titles.length}/5
+                        </span>
+                      )}
+                    </div>
+                    {editMode ? (
+                      <div>
+                        <div className="flex mb-2">
+                          <input
+                            type="text"
+                            value={newPreferredJobTitle}
+                            onChange={(e) => setNewPreferredJobTitle(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && addPreferredJobTitle()}
+                            placeholder="Add preferred job title"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                          <button
+                            onClick={addPreferredJobTitle}
+                            disabled={!newPreferredJobTitle.trim() || tempData.preferred_job_titles.length >= 5}
+                            className="bg-green-500 text-white px-3 py-2 rounded-r-lg hover:bg-green-600 disabled:bg-gray-300"
+                          >
+                            Add
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {tempData.preferred_job_titles.map((title, index) => (
+                            <div key={index} className="flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full">
+                              {title}
+                              <button
+                                onClick={() => removePreferredJobTitle(index)}
+                                className="ml-1 text-green-800 hover:text-red-500"
+                              >
+                                <FaTimes size={12} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {userData.preferred_job_titles.length > 0 ? (
+                          userData.preferred_job_titles.map((title, index) => (
+                            <span key={index} className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+                              {title}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-500">No preferred job titles</span>
                         )}
                       </div>
                     )}
@@ -669,7 +923,6 @@ const Dashboard = () => {
                 </div>
               </DashboardCard>
             </div>
-
             <div className="space-y-6">
               <DashboardCard
                 title="Preferences"
@@ -685,9 +938,7 @@ const Dashboard = () => {
                       <input
                         type="checkbox"
                         checked={tempData.prefers_day_shift}
-                        onChange={() =>
-                          handleCheckboxChange("prefers_day_shift")
-                        }
+                        onChange={() => handleCheckboxChange("prefers_day_shift")}
                         className="h-5 w-5 text-blue-600 rounded"
                       />
                     ) : (
@@ -711,9 +962,7 @@ const Dashboard = () => {
                       <input
                         type="checkbox"
                         checked={tempData.prefers_night_shift}
-                        onChange={() =>
-                          handleCheckboxChange("prefers_night_shift")
-                        }
+                        onChange={() => handleCheckboxChange("prefers_night_shift")}
                         className="h-5 w-5 text-blue-600 rounded"
                       />
                     ) : (
@@ -761,9 +1010,7 @@ const Dashboard = () => {
                       <input
                         type="checkbox"
                         checked={tempData.work_from_office}
-                        onChange={() =>
-                          handleCheckboxChange("work_from_office")
-                        }
+                        onChange={() => handleCheckboxChange("work_from_office")}
                         className="h-5 w-5 text-blue-600 rounded"
                       />
                     ) : (
@@ -806,28 +1053,14 @@ const Dashboard = () => {
               </DashboardCard>
 
               <DashboardCard
-                title="Skills & Language"
+                title="Skills & Languages"
                 icon={<FaCode className="text-blue-500" />}
               >
                 <div className="space-y-4">
-                  <EditableField
-                    editMode={editMode}
-                    icon={<FaLanguage />}
-                    label="Preferred Language"
-                    name="preferred_language"
-                    value={
-                      editMode
-                        ? tempData.preferred_language
-                        : userData.preferred_language
-                    }
-                    onChange={handleInputChange}
-                  />
                   <div>
                     <div className="flex items-center mb-2">
                       <FaCode className="text-gray-500 mr-2" />
-                      <span className="text-sm font-medium text-gray-500">
-                        Skills
-                      </span>
+                      <span className="text-sm font-medium text-gray-500">Technical Skills</span>
                       {editMode && (
                         <span className="text-xs text-gray-500 ml-auto">
                           {tempData.skills.length}/10
@@ -847,9 +1080,7 @@ const Dashboard = () => {
                           />
                           <button
                             onClick={addSkill}
-                            disabled={
-                              !newSkill.trim() || tempData.skills.length >= 10
-                            }
+                            disabled={!newSkill.trim() || tempData.skills.length >= 10}
                             className="bg-blue-500 text-white px-3 py-2 rounded-r-lg hover:bg-blue-600 disabled:bg-gray-300"
                           >
                             Add
@@ -857,10 +1088,7 @@ const Dashboard = () => {
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {tempData.skills.map((skill, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full"
-                            >
+                            <div key={index} className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
                               {skill}
                               <button
                                 onClick={() => removeSkill(index)}
@@ -874,12 +1102,9 @@ const Dashboard = () => {
                       </div>
                     ) : (
                       <div className="flex flex-wrap gap-2">
-                        {userData.skills.length > 0 ? (
-                          userData.skills.map((skill, index) => (
-                            <span
-                              key={index}
-                              className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
-                            >
+                        {userData?.skills?.length > 0 ? (
+                          userData?.skills?.map((skill, index) => (
+                            <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
                               {skill}
                             </span>
                           ))
@@ -889,6 +1114,68 @@ const Dashboard = () => {
                       </div>
                     )}
                   </div>
+                  
+                  <div>
+                    <div className="flex items-center mb-2">
+                      <FaLanguage className="text-gray-500 mr-2" />
+                      <span className="text-sm font-medium text-gray-500">Preferred Languages</span>
+                      {editMode && (
+                        <span className="text-xs text-gray-500 ml-auto">
+                          {tempData.preferred_languages.length}/5
+                        </span>
+                      )}
+                    </div>
+                    {editMode ? (
+                      <div>
+                        <div className="flex mb-2">
+                          <input
+                            type="text"
+                            value={newPreferredLanguage}
+                            onChange={(e) => setNewPreferredLanguage(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && addPreferredLanguage()}
+                            placeholder="Add language"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                          <button
+                            onClick={addPreferredLanguage}
+                            disabled={!newPreferredLanguage.trim() || tempData?.preferred_languages?.length >= 5}
+                            className="bg-purple-500 text-white px-3 py-2 rounded-r-lg hover:bg-purple-600 disabled:bg-gray-300"
+                          >
+                            Add
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+
+                          {/* {tempData?.preferred_languages?.map((lang, index) => (
+                            <div key={index} className="flex items-center bg-purple-100 text-purple-800 px-3 py-1 rounded-full">
+                              {lang}
+                              <button
+                                onClick={() => removePreferredLanguage(index)}
+                                className="ml-1 text-purple-800 hover:text-red-500"
+                              >
+                                <FaTimes size={12} />
+                              </button>
+                            </div>
+                          ))} */}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        
+                        {/* {userData?.preferred_languages?.length > 0 ? (
+                          userData?.preferred_languages?.map((lang, index) => (
+                            <span key={index} className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
+                              {lang}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-gray-500">No languages added</span>
+                        )} */}
+                      </div>
+                    )}
+
+                    {/* {console.log("Preferred Languages:", userData?.preferred_languages)} */}
+                  </div>
                 </div>
               </DashboardCard>
 
@@ -896,20 +1183,34 @@ const Dashboard = () => {
                 title="Account Information"
                 icon={<FaLock className="text-blue-500" />}
               >
-                <EditableField
-                  editMode={editMode}
-                  icon={<FaLock />}
-                  label="Password"
-                  name="password"
-                  type="password"
-                  value={editMode ? tempData.password : "••••••••"}
-                  onChange={handleInputChange}
-                />
+                <div className="space-y-2">
+                  <EditableField
+                    editMode={editMode}
+                    icon={<FaLock />}
+                    label="Password"
+                    name="password"
+                    type="password"
+                    value={editMode ? tempData.password : "••••••••"}
+                    onChange={handleInputChange}
+                  />
+                  <div>
+                    <span className="text-gray-500 flex items-center mb-1">
+                      <FaExclamationTriangle className="mr-2" />
+                      <span className="text-sm font-medium">Profile Status</span>
+                    </span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      userData.doneprofile 
+                        ? "bg-green-100 text-green-800" 
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}>
+                      {userData.doneprofile ? "Profile Complete" : "Profile Incomplete"}
+                    </span>
+                  </div>
+                </div>
               </DashboardCard>
             </div>
           </div>
         )}
-
         {activeTab === "stats" && (
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -929,14 +1230,13 @@ const Dashboard = () => {
                 progress={calculateStrengthScore(userData)}
               />
               <StatCard
-                title="Last Updated"
-                value="Just now"
-                icon={<FaEdit className="text-[#02325a]" />}
+                title="Jobs Applied"
+                value={userData.total_jobs_applied || 0}
+                icon={<FaBriefcase className="text-green-500" />}
               />
             </div>
           </div>
         )}
-
         {activeTab === "CV-Builder" && (
           <div className="bg-white rounded-xl shadow-sm p-4">
             {userData?.resume ? (
@@ -1034,6 +1334,7 @@ const EditableField = ({
             onChange={onChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
+            <option value="">Select {label.toLowerCase()}</option>
             {selectOptions.map((option) => (
               <option key={option} value={option}>
                 {option}
@@ -1081,14 +1382,21 @@ const calculateCompletion = (data) => {
     data?.dob,
     data?.gender,
     data?.number,
-    data?.degree,
-    data?.college_name,
+    data?.email,
+    data?.city,
+    data?.state,
+    data?.highest_education,
+    data?.experience_level,
     data?.job_title,
     data?.company_name,
+    data?.current_salary,
     data?.job_roles?.length > 0,
-    data?.skills.length > 0,
+    data?.skills?.length > 0,
+    data?.preferred_job_titles?.length > 0,
     data?.profile_pic,
     data?.resume,
+    alldata?.graduation,
+    alldata?.postGraduation,
   ];
   const filledFields = fields.filter((field) => Boolean(field)).length;
   return Math.round((filledFields / fields.length) * 100);
@@ -1108,14 +1416,20 @@ const calculateStrengthScore = (data) => {
   if (data.dob) score += 5;
   if (data.gender) score += 5;
   if (data.number) score += 10;
-  if (data.degree) score += 10;
-  if (data.college_name) score += 10;
+  if (data.email) score += 10;
+  if (data.city || data.state) score += 5;
+  if (data.highest_education) score += 10;
+  if (data.experience_level) score += 10;
   if (data.job_title) score += 15;
   if (data.company_name) score += 15;
-  if (data.job_roles.length > 0) score += 15;
-  if (data.skills.length > 0) score += 20;
+  if (data.current_salary) score += 10;
+  if (data.job_roles?.length > 0) score += 15;
+  if (data.skills?.length > 0) score += 20;
+  if (data.preferred_job_titles?.length > 0) score += 10;
   if (data.profile_pic) score += 5;
   if (data.resume) score += 5;
+  if (alldata?.graduation) score += 10;
+  if (alldata?.postGraduation) score += 10;
   return Math.min(score, 100);
 };
 

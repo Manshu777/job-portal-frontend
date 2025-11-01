@@ -427,6 +427,9 @@ const MultiStepJobPostingForm = ({ userdata, companies }) => {
   }
 };
 
+
+console.log('userdata',userdata.contact_email)
+
   const generateJobDescription = async () => {
     // Ensure required fields exist
     
@@ -534,7 +537,6 @@ quillRef.current.clipboard.dangerouslyPasteHTML(generatedText);
     totalExperienceRequired: "",
   });
   const [educationLevels, setEducationLevels] = useState([
-  { value: "Any", label: "Any" },
   { value: "Graduated", label: "Graduated" },
   { value: "Graduate Not Required", label: "Graduate Not Required" },
   { value: "Masters", label: "Masters" },
@@ -1484,7 +1486,7 @@ const fetchSpecializations = useCallback(async (courseName) => {
 
   const handleChange = (e) => {
     const value = e.target.value;
-    handleInputChange(e); // Update formData in parent component
+    handleInputChange(e);
     fetchJobTitles(value);
 
   };
@@ -1985,7 +1987,7 @@ const renderStepContent = () => {
                     errors.payType ? "border-red-500" : "border-gray-300"
                   } px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300`}
                 >
-                  <option value="">Select Pay Type</option>
+                  {/* <option value="">Select Pay Type</option> */}
                   <option value="Salary">Salary</option>
                   <option value="Salary + Incentive">Salary + Incentive</option>
                 </select>
@@ -1993,6 +1995,8 @@ const renderStepContent = () => {
                   <p className="mt-1 text-xs text-red-500">{errors.payType}</p>
                 )}
               </div>
+            {formData.payType && (
+              <>
               <div>
                 <label className="block text-sm font-semibold text-gray-800">
                   Minimum Salary (INR) *
@@ -2013,7 +2017,7 @@ const renderStepContent = () => {
                   </p>
                 )}
               </div>
-              {formData.payType && (
+            
                 <div>
                   <label className="block text-sm font-semibold text-gray-800">
                     Maximum Salary (INR) *
@@ -2034,6 +2038,7 @@ const renderStepContent = () => {
                     </p>
                   )}
                 </div>
+              </>
               )}
               {formData.payType === "Salary + Incentive" && (
                 <div>
@@ -2891,7 +2896,8 @@ const renderStepContent = () => {
                 <input
                   type="email"
                   name="contactEmail"
-                  value={formData.contactEmail}
+                  value={userdata?.contact_email}
+                  disabled={true}
                   onChange={handleInputChange}
                   className={`mt-2 w-full rounded-lg border ${
                     errors.contact ? "border-red-500" : "border-gray-300"

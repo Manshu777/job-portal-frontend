@@ -41,13 +41,35 @@ const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     })),
   ];
 
-  const getMaxExperienceOptions = () => {
-    if (!formData.minExperience) return experienceOptions;
+  const getMinExperienceOptions = () => {
+  let filteredOptions = [...experienceOptions];
+
+  // remove Fresher if user selected experienced
+  if (formData?.experienceType === 'experienced') {
+    filteredOptions = filteredOptions.filter(opt => opt.value !== '0');
+  }
+
+  return filteredOptions;
+};
+
+const getMaxExperienceOptions = () => {
+  let filteredOptions = [...experienceOptions];
+
+  // remove Fresher if user selected experienced
+  if (formData?.experienceType === 'experienced') {
+    filteredOptions = filteredOptions.filter(opt => opt.value !== '0');
+  }
+
+  // filter max > min
+  if (formData?.minExperience) {
     const minValue = parseFloat(formData.minExperience);
-    return experienceOptions.filter(
-      (option) => parseFloat(option.value) > minValue
+    filteredOptions = filteredOptions.filter(
+      opt => parseFloat(opt.value) > minValue
     );
-  };
+  }
+
+  return filteredOptions;
+};
 
   // Load recent searches from localStorage
   useEffect(() => {
@@ -423,20 +445,20 @@ const [isSidebarOpen, setIsSidebarOpen] = useState(false);
                         >
                           Minimum Experience
                         </label>
-                        <select
-                          name="minExperience"
-                          id="minExperience"
-                          value={formData.minExperience}
-                          onChange={handleInputChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 text-sm"
-                        >
-                          <option value="">Select Min Experience</option>
-                          {experienceOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
+                       <select
+    name="minExperience"
+    id="minExperience"
+    value={formData.minExperience}
+    onChange={handleInputChange}
+    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 text-sm"
+  >
+    <option value="">Select Min Experience</option>
+    {getMinExperienceOptions().map((option) => (
+      <option key={option.value} value={option.value}>
+        {option.label}
+      </option>
+    ))}
+  </select>
                       </div>
                       <div>
                         <label
@@ -446,19 +468,19 @@ const [isSidebarOpen, setIsSidebarOpen] = useState(false);
                           Maximum Experience
                         </label>
                         <select
-                          name="maxExperience"
-                          id="maxExperience"
-                          value={formData.maxExperience}
-                          onChange={handleInputChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 text-sm"
-                        >
-                          <option value="">Select Max Experience</option>
-                          {getMaxExperienceOptions().map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
+    name="maxExperience"
+    id="maxExperience"
+    value={formData.maxExperience}
+    onChange={handleInputChange}
+    className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200 text-sm"
+  >
+    <option value="">Select Max Experience</option>
+    {getMaxExperienceOptions().map((option) => (
+      <option key={option.value} value={option.value}>
+        {option.label}
+      </option>
+    ))}
+  </select>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
