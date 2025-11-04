@@ -1,2 +1,2 @@
-export const baseurl=`http://127.0.0.1:8000/api/v1`
-export const storageLink=`http://127.0.0.1:8000/storage/`
+export const baseurl=`http://147.93.18.63:8001/api/v1`
+export const storageLink=`http://147.93.18.63:8001/storage/`
