@@ -13,42 +13,47 @@ import { baseurl } from "@/app/components/common";
 const Second = ({ alldata, handelinputs, errors }) => {
   const [eduLvl, setEduLvl] = useState(null);
 
-  // Separate qualification lists
-  const [gradQualifications, setGradQualifications] = useState([]);
+  /* ---------- Qualification & Specialization states ---------- */
+  const [qualifications, setQualifications] = useState([]);          // shared for 10/12/Diploma/ITI/Grad
   const [postGradQualifications, setPostGradQualifications] = useState([]);
-  const [loadingGradQual, setLoadingGradQual] = useState(false);
+  const [loadingQual, setLoadingQual] = useState(false);
   const [loadingPostGradQual, setLoadingPostGradQual] = useState(false);
 
-  // Specializations per level
-  const [gradSpecializations, setGradSpecializations] = useState([]);
+  const [specializations, setSpecializations] = useState([]);        // shared for Diploma/ITI/Grad
   const [postGradSpecializations, setPostGradSpecializations] = useState([]);
-  const [loadingGradSpec, setLoadingGradSpec] = useState(false);
+  const [loadingSpec, setLoadingSpec] = useState(false);
   const [loadingPostGradSpec, setLoadingPostGradSpec] = useState(false);
 
   const [apiError, setApiError] = useState("");
 
-  // Map highest_education → eduLvl
+  /* ---------- Map highest_education → eduLvl ---------- */
   useEffect(() => {
     const found = EDUCATION_LEVELS.find((l) => l.name === alldata.highest_education);
     setEduLvl(found ? found.value : null);
   }, [alldata.highest_education]);
 
-  // Fetch Graduation Qualifications (Level 1)
-  const fetchGradQualifications = useCallback(async () => {
-    setLoadingGradQual(true);
+  /* ---------- FETCH QUALIFICATIONS (shared for 1,3,5,6,7) ---------- */
+  const fetchQualifications = useCallback(async () => {
+    if (!eduLvl || ![1, 3, 5, 6, 7].includes(eduLvl)) {
+      setQualifications([]);
+      return;
+    }
+
+    setLoadingQual(true);
     try {
-      const res = await fetch(`${baseurl}/qualifications/education-level/1`);
+      const res = await fetch(`${baseurl}/qualifications/education-level/${eduLvl}`);
       const json = await res.json();
       if (json.status !== "success") throw new Error(json.message);
-      setGradQualifications(json.data || []);
+      setQualifications(json.data || []);
     } catch (e) {
-      setApiError("Failed to load graduation programs");
+      setApiError("Failed to load programs");
+      console.error(e);
     } finally {
-      setLoadingGradQual(false);
+      setLoadingQual(false);
     }
-  }, []);
+  }, [eduLvl]);
 
-  // Fetch Post-Graduation Qualifications (Level 2)
+  /* ---------- FETCH POST-GRAD QUALIFICATIONS (level 2) ---------- */
   const fetchPostGradQualifications = useCallback(async () => {
     setLoadingPostGradQual(true);
     try {
@@ -63,41 +68,55 @@ const Second = ({ alldata, handelinputs, errors }) => {
     }
   }, []);
 
+  /* ---------- Trigger fetches when eduLvl changes ---------- */
   useEffect(() => {
-    fetchGradQualifications();
-    fetchPostGradQualifications();
-  }, [fetchGradQualifications, fetchPostGradQualifications]);
+    fetchQualifications();
+  }, [fetchQualifications]);
 
-  // Fetch Specializations for Graduation
-  const selectedGradQual = useMemo(() => {
-    return gradQualifications.find((q) => q.title === alldata?.graduation?.education_level);
-  }, [gradQualifications, alldata?.graduation?.education_level]);
+  useEffect(() => {
+    if (eduLvl === 2) fetchPostGradQualifications();
+    else setPostGradQualifications([]);
+  }, [eduLvl, fetchPostGradQualifications]);
 
-  const fetchGradSpecializations = useCallback(async () => {
-    if (!selectedGradQual) {
-      setGradSpecializations([]);
+  /* ---------- SELECTED QUAL (shared) ---------- */
+  const selectedQual = useMemo(() => {
+    // For Diploma/ITI → top-level education_level
+    // For Graduation → graduation.education_level
+    const title =
+      alldata?.graduation?.education_level ||
+      alldata?.education_level ||
+      "";
+    return qualifications.find((q) => q.title === title);
+  }, [qualifications, alldata?.graduation?.education_level, alldata?.education_level]);
+
+  /* ---------- FETCH SPECIALIZATIONS (shared) ---------- */
+  const fetchSpecializations = useCallback(async () => {
+    if (!selectedQual) {
+      setSpecializations([]);
       return;
     }
-    setLoadingGradSpec(true);
+    setLoadingSpec(true);
     try {
-      const res = await fetch(`${baseurl}/qualifications/${selectedGradQual.id}/specializations`);
+      const res = await fetch(`${baseurl}/qualifications/${selectedQual.id}/specializations`);
       const json = await res.json();
       if (json.status !== "success") throw new Error(json.message);
-      setGradSpecializations(json.data.specializations || []);
+      setSpecializations(json.data.specializations || []);
     } catch (e) {
-      setApiError("Failed to load graduation specializations");
+      setApiError("Failed to load specializations");
     } finally {
-      setLoadingGradSpec(false);
+      setLoadingSpec(false);
     }
-  }, [selectedGradQual]);
+  }, [selectedQual]);
 
   useEffect(() => {
-    fetchGradSpecializations();
-  }, [fetchGradSpecializations]);
+    fetchSpecializations();
+  }, [fetchSpecializations]);
 
-  // Fetch Specializations for Post-Graduation
+  /* ---------- POST-GRAD SPECIALIZATIONS ---------- */
   const selectedPostGradQual = useMemo(() => {
-    return postGradQualifications.find((q) => q.title === alldata?.postGraduation?.education_level);
+    return postGradQualifications.find(
+      (q) => q.title === alldata?.postGraduation?.education_level
+    );
   }, [postGradQualifications, alldata?.postGraduation?.education_level]);
 
   const fetchPostGradSpecializations = useCallback(async () => {
@@ -122,7 +141,7 @@ const Second = ({ alldata, handelinputs, errors }) => {
     fetchPostGradSpecializations();
   }, [fetchPostGradSpecializations]);
 
-  // Reset block
+  /* ---------- Reset block ---------- */
   const resetBlock = (block) => {
     const empty = {
       education_level: "",
@@ -135,7 +154,7 @@ const Second = ({ alldata, handelinputs, errors }) => {
     handelinputs({ target: { name: block, value: empty } });
   };
 
-  // Handle highest education change
+  /* ---------- Highest education change ---------- */
   const handleHighestChange = (opt) => {
     const name = opt ? opt.label : "";
     handelinputs({ target: { name: "highest_education", value: name } });
@@ -146,7 +165,7 @@ const Second = ({ alldata, handelinputs, errors }) => {
     }
   };
 
-  // Handle year validation
+  /* ---------- Year validation ---------- */
   const handleYear = (e, block) => {
     const val = e.target.value;
     const cur = new Date().getFullYear();
@@ -161,7 +180,19 @@ const Second = ({ alldata, handelinputs, errors }) => {
     });
   };
 
-  // Options
+  /* ---------- Pursuing change ---------- */
+  const handlePursuingChange = (value) => {
+    handelinputs({ target: { name: "currently_pursuing", value } });
+
+    if (value === "Yes") {
+      ["", "graduation", "postGraduation"].forEach((prefix) => {
+        handelinputs({ target: { name: `${prefix ? prefix + "." : ""}complete_years`, value: "" } });
+        handelinputs({ target: { name: `${prefix ? prefix + "." : ""}complete_month`, value: "" } });
+      });
+    }
+  };
+
+  /* ---------- Options ---------- */
   const educationOptions = EDUCATION_LEVELS.map((e) => ({
     value: e.value,
     label: e.name,
@@ -169,36 +200,44 @@ const Second = ({ alldata, handelinputs, errors }) => {
   const monthOptions = MONTHS.map((m) => ({ value: m, label: m }));
   const mediumOptions = SCHOOL_MEDIUMS.map((m) => ({ value: m, label: m }));
 
-  const gradQualOptions = gradQualifications.map((q) => ({ value: q.title, label: q.title }));
-  const postGradQualOptions = postGradQualifications.map((q) => ({ value: q.title, label: q.title }));
-  const gradSpecOptions = gradSpecializations.map((s) => ({ value: s.title, label: s.title }));
-  const postGradSpecOptions = postGradSpecializations.map((s) => ({ value: s.title, label: s.title }));
+  const qualOptions = qualifications.map((q) => ({ value: q.title, label: q.title }));
+  const postGradQualOptions = postGradQualifications.map((q) => ({
+    value: q.title,
+    label: q.title,
+  }));
+  const specOptions = specializations.map((s) => ({ value: s.title, label: s.title }));
+  const postGradSpecOptions = postGradSpecializations.map((s) => ({
+    value: s.title,
+    label: s.title,
+  }));
 
   return (
     <div className="space-y-8">
-      {/* Currently Pursuing */}
-      <div className="flex gap-4">
-        {["Yes", "No"].map((v) => (
-          <button
-            key={v}
-            type="button"
-            onClick={() =>
-              handelinputs({
-                target: { name: "currently_pursuing", value: v },
-              })
-            }
-            className={`px-5 py-2 rounded-full border ${
-              alldata.currently_pursuing === v
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 text-gray-700"
-            }`}
-          >
-            {v}
-          </button>
-        ))}
+
+      {/* ---------- Are you currently pursuing? ---------- */}
+      <div>
+        <label className="block font-medium text-gray-700 mb-2">
+          Are you currently pursuing? <span className="text-red-500">*</span>
+        </label>
+        <div className="flex gap-4">
+          {["Yes", "No"].map((v) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => handlePursuingChange(v)}
+              className={`px-5 py-2 rounded-full border ${
+                alldata.currently_pursuing === v
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Highest Education */}
+      {/* ---------- Highest Education ---------- */}
       <div>
         <label className="flex items-center font-medium text-gray-700">
           <FiBook className="mr-2 text-blue-500" />
@@ -218,10 +257,11 @@ const Second = ({ alldata, handelinputs, errors }) => {
         )}
       </div>
 
-      {/* 10th / 12th / Diploma / ITI */}
+      {/* ---------- 10th / 12th / Diploma / ITI ---------- */}
       {eduLvl && [3, 5, 6, 7].includes(eduLvl) && (
         <div className="grid md:grid-cols-2 gap-6">
-          {/* Degree Program (only for Diploma & ITI) */}
+
+          {/* Degree Program – only for Diploma & ITI */}
           {[3, 7].includes(eduLvl) && (
             <div>
               <label className="flex items-center font-medium text-gray-700">
@@ -229,15 +269,39 @@ const Second = ({ alldata, handelinputs, errors }) => {
                 Degree Program <span className="text-red-500 ml-1">*</span>
               </label>
               <Select
-                isLoading={loadingGradQual}
-                options={gradQualOptions}
-                value={gradQualOptions.find((o) => o.value === alldata?.education_level)}
+                isLoading={loadingQual}
+                options={qualOptions}
+                value={qualOptions.find((o) => o.value === alldata.education_level)}
                 onChange={(opt) =>
                   handelinputs({
                     target: { name: "education_level", value: opt?.value ?? "" },
                   })
                 }
                 placeholder="Select degree"
+                styles={customSelectStyles}
+                menuPortalTarget={document.body}
+              />
+            </div>
+          )}
+
+          {/* Specialization – appears for Diploma & ITI */}
+          {[3, 7].includes(eduLvl) && alldata.education_level && (
+            <div>
+              <label className="flex items-center font-medium text-gray-700">
+                <FiAward className="mr-2 text-blue-500" />
+                Specialization
+              </label>
+              <Select
+                isLoading={loadingSpec}
+                isDisabled={!alldata.education_level}
+                options={specOptions}
+                value={specOptions.find((o) => o.value === alldata.specialization)}
+                onChange={(opt) =>
+                  handelinputs({
+                    target: { name: "specialization", value: opt?.value ?? "" },
+                  })
+                }
+                placeholder="Select specialization"
                 styles={customSelectStyles}
                 menuPortalTarget={document.body}
               />
@@ -271,11 +335,12 @@ const Second = ({ alldata, handelinputs, errors }) => {
             </label>
             <input
               type="number"
+              disabled={alldata.currently_pursuing === "Yes"}
               value={alldata.complete_years ?? ""}
               onChange={(e) => handleYear(e, "")}
               min="1900"
               max={new Date().getFullYear() + 5}
-              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
             />
           </div>
 
@@ -286,6 +351,7 @@ const Second = ({ alldata, handelinputs, errors }) => {
               Completion Month <span className="text-red-500 ml-1">*</span>
             </label>
             <Select
+              isDisabled={alldata.currently_pursuing === "Yes"}
               options={monthOptions}
               value={monthOptions.find((o) => o.value === alldata.complete_month)}
               onChange={(opt) =>
@@ -300,21 +366,21 @@ const Second = ({ alldata, handelinputs, errors }) => {
         </div>
       )}
 
-      {/* GRADUATION */}
+      {/* ---------- GRADUATION ---------- */}
       {eduLvl && [1, 2].includes(eduLvl) && (
         <div className="border-t pt-6">
           <h3 className="text-xl font-semibold mb-4">Graduation</h3>
           <div className="grid md:grid-cols-2 gap-6">
-            {/* Degree Program */}
+
             <div>
               <label className="flex items-center font-medium text-gray-700">
                 <FiAward className="mr-2 text-blue-500" />
                 Degree Program <span className="text-red-500 ml-1">*</span>
               </label>
               <Select
-                isLoading={loadingGradQual}
-                options={gradQualOptions}
-                value={gradQualOptions.find((o) => o.value === alldata?.graduation?.education_level)}
+                isLoading={loadingQual}
+                options={qualOptions}
+                value={qualOptions.find((o) => o.value === alldata?.graduation?.education_level)}
                 onChange={(opt) =>
                   handelinputs({
                     target: { name: "graduation.education_level", value: opt?.value ?? "" },
@@ -329,17 +395,16 @@ const Second = ({ alldata, handelinputs, errors }) => {
               )}
             </div>
 
-            {/* Specialization */}
             <div>
               <label className="flex items-center font-medium text-gray-700">
                 <FiAward className="mr-2 text-blue-500" />
                 Specialization
               </label>
               <Select
-                isLoading={loadingGradSpec}
+                isLoading={loadingSpec}
                 isDisabled={!alldata?.graduation?.education_level}
-                options={gradSpecOptions}
-                value={gradSpecOptions.find((o) => o.value === alldata?.graduation?.specialization)}
+                options={specOptions}
+                value={specOptions.find((o) => o.value === alldata?.graduation?.specialization)}
                 onChange={(opt) =>
                   handelinputs({
                     target: { name: "graduation.specialization", value: opt?.value ?? "" },
@@ -351,7 +416,6 @@ const Second = ({ alldata, handelinputs, errors }) => {
               />
             </div>
 
-            {/* College */}
             <div>
               <label className="flex items-center font-medium text-gray-700">
                 <FiBook className="mr-2 text-blue-500" />
@@ -366,7 +430,6 @@ const Second = ({ alldata, handelinputs, errors }) => {
               />
             </div>
 
-            {/* Completion Year */}
             <div>
               <label className="flex items-center font-medium text-gray-700">
                 <FiAward className="mr-2 text-blue-500" />
@@ -374,21 +437,22 @@ const Second = ({ alldata, handelinputs, errors }) => {
               </label>
               <input
                 type="number"
+                disabled={alldata.currently_pursuing === "Yes"}
                 value={alldata?.graduation?.complete_years ?? ""}
                 onChange={(e) => handleYear(e, "graduation")}
                 min="1900"
                 max={new Date().getFullYear() + 5}
-                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
               />
             </div>
 
-            {/* Completion Month */}
             <div>
               <label className="flex items-center font-medium text-gray-700">
                 <FiAward className="mr-2 text-blue-500" />
                 Completion Month <span className="text-red-500 ml-1">*</span>
               </label>
               <Select
+                isDisabled={alldata.currently_pursuing === "Yes"}
                 options={monthOptions}
                 value={monthOptions.find((o) => o.value === alldata?.graduation?.complete_month)}
                 onChange={(opt) =>
@@ -400,35 +464,16 @@ const Second = ({ alldata, handelinputs, errors }) => {
                 menuPortalTarget={document.body}
               />
             </div>
-
-            {/* School Medium */}
-            <div>
-              {/* <label className="flex items-center font-medium text-gray-700">
-                <FiBook className="mr-2 text-blue-500" />
-                School Medium
-              </label>
-              <Select
-                options={mediumOptions}
-                value={mediumOptions.find((o) => o.value === alldata?.graduation?.school_medium)}
-                onChange={(opt) =>
-                  handelinputs({
-                    target: { name: "graduation.school_medium", value: opt?.value ?? "" },
-                  })
-                }
-                styles={customSelectStyles}
-                menuPortalTarget={document.body}
-              /> */}
-            </div>
           </div>
         </div>
       )}
 
-      {/* POST-GRADUATION */}
+      {/* ---------- POST-GRADUATION ---------- */}
       {eduLvl === 2 && (
         <div className="border-t pt-6 mt-8">
           <h3 className="text-xl font-semibold mb-4">Post-Graduation</h3>
           <div className="grid md:grid-cols-2 gap-6">
-            {/* Degree Program */}
+
             <div>
               <label className="flex items-center font-medium text-gray-700">
                 <FiAward className="mr-2 text-blue-500" />
@@ -437,7 +482,9 @@ const Second = ({ alldata, handelinputs, errors }) => {
               <Select
                 isLoading={loadingPostGradQual}
                 options={postGradQualOptions}
-                value={postGradQualOptions.find((o) => o.value === alldata?.postGraduation?.education_level)}
+                value={postGradQualOptions.find(
+                  (o) => o.value === alldata?.postGraduation?.education_level
+                )}
                 onChange={(opt) =>
                   handelinputs({
                     target: { name: "postGraduation.education_level", value: opt?.value ?? "" },
@@ -449,7 +496,6 @@ const Second = ({ alldata, handelinputs, errors }) => {
               />
             </div>
 
-            {/* Specialization */}
             <div>
               <label className="flex items-center font-medium text-gray-700">
                 <FiAward className="mr-2 text-blue-500" />
@@ -459,7 +505,9 @@ const Second = ({ alldata, handelinputs, errors }) => {
                 isLoading={loadingPostGradSpec}
                 isDisabled={!alldata?.postGraduation?.education_level}
                 options={postGradSpecOptions}
-                value={postGradSpecOptions.find((o) => o.value === alldata?.postGraduation?.specialization)}
+                value={postGradSpecOptions.find(
+                  (o) => o.value === alldata?.postGraduation?.specialization
+                )}
                 onChange={(opt) =>
                   handelinputs({
                     target: { name: "postGraduation.specialization", value: opt?.value ?? "" },
@@ -471,7 +519,6 @@ const Second = ({ alldata, handelinputs, errors }) => {
               />
             </div>
 
-            {/* College */}
             <div>
               <label className="flex items-center font-medium text-gray-700">
                 <FiBook className="mr-2 text-blue-500" />
@@ -486,7 +533,6 @@ const Second = ({ alldata, handelinputs, errors }) => {
               />
             </div>
 
-            {/* Completion Year */}
             <div>
               <label className="flex items-center font-medium text-gray-700">
                 <FiAward className="mr-2 text-blue-500" />
@@ -494,23 +540,26 @@ const Second = ({ alldata, handelinputs, errors }) => {
               </label>
               <input
                 type="number"
+                disabled={alldata.currently_pursuing === "Yes"}
                 value={alldata?.postGraduation?.complete_years ?? ""}
                 onChange={(e) => handleYear(e, "postGraduation")}
                 min="1900"
                 max={new Date().getFullYear() + 5}
-                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
               />
             </div>
 
-            {/* Completion Month */}
             <div>
               <label className="flex items-center font-medium text-gray-700">
                 <FiAward className="mr-2 text-blue-500" />
                 Completion Month
               </label>
               <Select
+                isDisabled={alldata.currently_pursuing === "Yes"}
                 options={monthOptions}
-                value={monthOptions.find((o) => o.value === alldata?.postGraduation?.complete_month)}
+                value={monthOptions.find(
+                  (o) => o.value === alldata?.postGraduation?.complete_month
+                )}
                 onChange={(opt) =>
                   handelinputs({
                     target: { name: "postGraduation.complete_month", value: opt?.value ?? "" },
@@ -524,7 +573,7 @@ const Second = ({ alldata, handelinputs, errors }) => {
         </div>
       )}
 
-      {/* API Error */}
+      {/* ---------- API Error ---------- */}
       {apiError && (
         <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-lg">{apiError}</div>
       )}

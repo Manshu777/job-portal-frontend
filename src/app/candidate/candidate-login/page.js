@@ -218,7 +218,7 @@ export default function Page() {
   };
 
 
-  const handelSubmit = async () => {
+ const handelSubmit = async () => {
   let token;
   if (typeof window !== "undefined") {
     token = localStorage?.getItem("port_tok") || alldata?.token;
@@ -232,51 +232,110 @@ export default function Page() {
 
   const formData = new FormData();
 
-  // Define fields that are objects and need to be stringified
-  // const nestedObjectFields = ['graduation', 'postGraduation'];
+  // -----------------------------------------------------------------
+  // 1. Fields that must be sent as PHP‑style arrays (key[])
+  // -----------------------------------------------------------------
+  const phpArrayFields = [
+    "skills",
+    "preferred_job_titles",
+    "preferred_languages",
+    "preferred_locations",
+    "experiences",           // <-- this is the tricky one
+  ];
 
-  const arrayFields = ['skills', 'preferred_job_titles', 'preferred_languages', 'preferred_locations'];
-const nestedObjectFields = ['graduation', 'postGraduation']; // Add more if needed
+  // -----------------------------------------------------------------
+  // 2. Nested objects that we JSON‑stringify (graduation / postGraduation)
+  // -----------------------------------------------------------------
+  const jsonObjectFields = ["graduation", "postGraduation"];
 
-Object.entries(alldata).forEach(([key, value]) => {
-  // Skip internal or unwanted keys
-  if (value === undefined) {
-    formData.append(key, "");
-    return;
-  }
+  // -----------------------------------------------------------------
+  // 3. Walk through every key in `alldata`
+  // -----------------------------------------------------------------
+  Object.entries(alldata).forEach(([key, value]) => {
+    // ---- skip undefined / null → send empty string (Laravel likes it) ----
+    if (value === undefined || value === null) {
+      formData.append(key, "");
+      return;
+    }
 
-  if (value === null) {
-    formData.append(key, "");
-    return;
-  }
+    // ---- 1. PHP‑style arrays ------------------------------------------------
+    if (phpArrayFields.includes(key)) {
+      let arr = [];
 
-  // Handle array fields (skills, preferred_*, etc.)
-  if (arrayFields.includes(key)) {
-    const values = Array.isArray(value)
-      ? value
-      : typeof value === 'string' && value.trim() !== ''
-        ? value.split(',').map(item => item.trim()).filter(Boolean)
-        : [];
+      // a) already an array
+      if (Array.isArray(value)) {
+        arr = value;
+      }
+      // b) stored as JSON string in DB (happens on edit)
+      else if (typeof value === "string" && value.trim() !== "") {
+        try {
+          arr = JSON.parse(value);
+        } catch {
+          // fallback – split by comma (old behaviour)
+          arr = value.split(",").map((s) => s.trim()).filter(Boolean);
+        }
+      }
 
-    values.forEach(item => {
-      formData.append(`${key}[]`, item);
-    });
-    return;
-  }
+      // ---- experiences need to be JSON‑stringified per item ----
+      if (key === "experiences") {
+        if (arr.length === 0) {
+          formData.append("experiences[]", ""); // empty array
+        } else {
+          arr.forEach((exp) => {
+            // make sure every required field exists (Laravel will still validate)
+            const safeExp = {
+              job_title: exp.job_title ?? "",
+              company_name: exp.company_name ?? "",
+              start_date: exp.start_date ?? "",
+              end_date: exp.end_date ?? null,
+              is_current: !!exp.is_current,
+              salary: exp.salary ?? null,
+              description: exp.description ?? "",
+            };
+            formData.append("experiences[]", JSON.stringify(safeExp));
 
-  // Handle nested objects: graduation, postGraduation
-  if (nestedObjectFields.includes(key) && typeof value === 'object' && value !== null) {
-    formData.append(key, JSON.stringify(value));
-    return;
-  }
+          });
+        }
+        return;
+      }
 
-  // Default: append scalar values (string, number, boolean)
-  formData.append(key, value);
-});
+      // ---- all other array fields (skills, preferred_*, etc.) ----
+      if (arr.length === 0) {
+        formData.append(`${key}[]`, "");
+      } else {
+        arr.forEach((item) => formData.append(`${key}[]`, String(item)));
+      }
+      return;
+    }
+
+    // ---- 2. Nested objects (graduation / postGraduation) --------------------
+    if (jsonObjectFields.includes(key) && typeof value === "object") {
+      const hasData = Object.values(value).some(
+        (v) => v !== null && v !== undefined && v !== ""
+      );
+      formData.append(key, hasData ? JSON.stringify(value) : JSON.stringify({}));
+      return;
+    }
+
+    // ---- 3. Everything else (scalar values) --------------------------------
+    formData.append(key, String(value));
+  });
+
+  // -----------------------------------------------------------------
+  // 4. Resume file (if present)
+  // -----------------------------------------------------------------
   if (resume) {
     formData.append("resume", resume);
   }
 
+  // -----------------------------------------------------------------
+  // 5. OPTIONAL – debug what is actually sent
+  // -----------------------------------------------------------------
+  // for (let [k, v] of formData.entries()) console.log(k, v);
+
+  // -----------------------------------------------------------------
+  // 6. POST
+  // -----------------------------------------------------------------
   try {
     const response = await axios.post(
       `${baseurl}/updatecandidate/${token}`,
@@ -284,7 +343,7 @@ Object.entries(alldata).forEach(([key, value]) => {
       {
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       }
     );
@@ -293,15 +352,24 @@ Object.entries(alldata).forEach(([key, value]) => {
       Swal.fire({ title: "Success", text: "Profile updated!", icon: "success" });
       router.push("/candidate/dashboard");
     } else {
-      Swal.fire({ title: "Error", text: response.data.message || "Update failed", icon: "error" });
+      Swal.fire({
+        title: "Error",
+        text: response.data.message || "Update failed",
+        icon: "error",
+      });
     }
   } catch (error) {
-    console.error("Error:", error);
-    Swal.fire({ title: "Error", text: "Submission failed", icon: "error" });
+    console.error("Submission error:", error.response?.data || error);
+
+    const errs = error.response?.data?.errors;
+    const msg =
+      errs && typeof errs === "object"
+        ? Object.values(errs).flat().join(", ")
+        : "Submission failed";
+
+    Swal.fire({ title: "Error", text: msg, icon: "error" });
   }
 };
-
-
 
   const getcondidate = async (token) => {
     if (!token) {
