@@ -12,6 +12,7 @@ import { baseurl } from "@/app/components/common";
 
 const Second = ({ alldata, handelinputs, errors }) => {
   const [eduLvl, setEduLvl] = useState(null);
+  const [edlvl , setedlvl] = useState(null);
 
   /* ---------- Qualification & Specialization states ---------- */
   const [qualifications, setQualifications] = useState([]);          // shared for 10/12/Diploma/ITI/Grad
@@ -27,32 +28,38 @@ const Second = ({ alldata, handelinputs, errors }) => {
   const [apiError, setApiError] = useState("");
 
   /* ---------- Map highest_education → eduLvl ---------- */
-  useEffect(() => {
-    const found = EDUCATION_LEVELS.find((l) => l.name === alldata.highest_education);
-    setEduLvl(found ? found.value : null);
-  }, [alldata.highest_education]);
+useEffect(() => {
+  const found = EDUCATION_LEVELS.find((l) => l.name === alldata.highest_education);
+  setEduLvl(found ? found.value : null);
+}, [alldata.highest_education]);
 
   /* ---------- FETCH QUALIFICATIONS (shared for 1,3,5,6,7) ---------- */
-  const fetchQualifications = useCallback(async () => {
-    if (!eduLvl || ![1, 3, 5, 6, 7].includes(eduLvl)) {
-      setQualifications([]);
-      return;
-    }
 
-    setLoadingQual(true);
-    try {
-      const res = await fetch(`${baseurl}/qualifications/education-level/${eduLvl}`);
-      const json = await res.json();
-      if (json.status !== "success") throw new Error(json.message);
-      setQualifications(json.data || []);
-    } catch (e) {
-      setApiError("Failed to load programs");
-      console.error(e);
-    } finally {
-      setLoadingQual(false);
-    }
-  }, [eduLvl]);
+    const fetchQualifications = useCallback(async () => {
+  // Fetch level 1 qualifications for BOTH Graduate (1) AND Post Graduate (2)
+  // Also fetch for ITI (3) and Diploma (7)
+  if (!eduLvl || ![1, 2, 3, 7].includes(eduLvl)) {
+    setQualifications([]);
+    return;
+  }
 
+  // Only fetch level 1 qualifications for Graduate & Post Graduate
+  const apiLevel = eduLvl === 2 ? 1 : eduLvl;
+
+  setLoadingQual(true);
+  try {
+    const res = await fetch(`${baseurl}/qualifications/education-level/${apiLevel}`);
+    const json = await res.json();
+    if (json.status !== "success") throw new Error(json.message);
+    setQualifications(json.data || []);
+  } catch (e) {
+    setApiError("Failed to load programs");
+    console.error(e);
+  } finally {
+    setLoadingQual(false);
+  }
+}, [eduLvl]);
+  
   /* ---------- FETCH POST-GRAD QUALIFICATIONS (level 2) ---------- */
   const fetchPostGradQualifications = useCallback(async () => {
     setLoadingPostGradQual(true);
@@ -73,10 +80,14 @@ const Second = ({ alldata, handelinputs, errors }) => {
     fetchQualifications();
   }, [fetchQualifications]);
 
+   
   useEffect(() => {
-    if (eduLvl === 2) fetchPostGradQualifications();
-    else setPostGradQualifications([]);
-  }, [eduLvl, fetchPostGradQualifications]);
+  if (eduLvl === 2) {
+    fetchPostGradQualifications();
+  } else {
+    setPostGradQualifications([]);
+  }
+}, [eduLvl, fetchPostGradQualifications]);
 
   /* ---------- SELECTED QUAL (shared) ---------- */
   const selectedQual = useMemo(() => {
@@ -155,15 +166,24 @@ const Second = ({ alldata, handelinputs, errors }) => {
   };
 
   /* ---------- Highest education change ---------- */
-  const handleHighestChange = (opt) => {
-    const name = opt ? opt.label : "";
-    handelinputs({ target: { name: "highest_education", value: name } });
+    const handleHighestChange = (opt) => {
+  const name = opt ? opt.label : "";
+  const value = opt ? opt.value : null;
 
-    if (!["Graduate", "Post Graduate"].includes(name)) {
-      resetBlock("graduation");
-      resetBlock("postGraduation");
-    }
-  };
+  setEduLvl(value);
+  handelinputs({ target: { name: "highest_education", value: name } });
+
+  // Reset unrelated blocks
+  if (!["Graduate", "Post Graduate"].includes(name)) {
+    resetBlock("graduation");
+    resetBlock("postGraduation");
+  }
+  if (!["ITI", "Diploma"].includes(name)) {
+    // Reset top-level fields if not ITI/Diploma
+    handelinputs({ target: { name: "education_level", value: "" } });
+    handelinputs({ target: { name: "specialization", value: "" } });
+  }
+};
 
   /* ---------- Year validation ---------- */
   const handleYear = (e, block) => {
@@ -264,48 +284,45 @@ const Second = ({ alldata, handelinputs, errors }) => {
           {/* Degree Program – only for Diploma & ITI */}
           {[3, 7].includes(eduLvl) && (
             <div>
-              <label className="flex items-center font-medium text-gray-700">
-                <FiAward className="mr-2 text-blue-500" />
-                Degree Program <span className="text-red-500 ml-1">*</span>
-              </label>
-              <Select
-                isLoading={loadingQual}
-                options={qualOptions}
-                value={qualOptions.find((o) => o.value === alldata.education_level)}
-                onChange={(opt) =>
-                  handelinputs({
-                    target: { name: "education_level", value: opt?.value ?? "" },
-                  })
-                }
-                placeholder="Select degree"
-                styles={customSelectStyles}
-                menuPortalTarget={document.body}
-              />
-            </div>
+    <label className="flex items-center font-medium text-gray-700">
+      <FiAward className="mr-2 text-blue-500" />
+      Degree Program <span className="text-red-500 ml-1">*</span>
+    </label>
+    <Select
+      isLoading={loadingQual}
+      options={qualOptions}
+      value={qualOptions.find((o) => o.value === alldata.education_level)}  
+      onChange={(opt) =>
+        handelinputs({
+          target: { name: "education_level", value: opt?.value ?? "" },
+        })
+      }
+      placeholder="Select program"
+      styles={customSelectStyles}
+      menuPortalTarget={document.body}
+    />
+  </div>
           )}
 
           {/* Specialization – appears for Diploma & ITI */}
           {[3, 7].includes(eduLvl) && alldata.education_level && (
             <div>
-              <label className="flex items-center font-medium text-gray-700">
-                <FiAward className="mr-2 text-blue-500" />
-                Specialization
-              </label>
-              <Select
-                isLoading={loadingSpec}
-                isDisabled={!alldata.education_level}
-                options={specOptions}
-                value={specOptions.find((o) => o.value === alldata.specialization)}
-                onChange={(opt) =>
-                  handelinputs({
-                    target: { name: "specialization", value: opt?.value ?? "" },
-                  })
-                }
-                placeholder="Select specialization"
-                styles={customSelectStyles}
-                menuPortalTarget={document.body}
-              />
-            </div>
+    <label>Specialization</label>
+    <Select
+      isLoading={loadingSpec}
+      isDisabled={!alldata.education_level}
+      options={specOptions}
+      value={specOptions.find((o) => o.value === alldata.specialization)}  
+      onChange={(opt) =>
+        handelinputs({
+          target: { name: "specialization", value: opt?.value ?? "" },
+        })
+      }
+      placeholder="Select specialization"
+      styles={customSelectStyles}
+      menuPortalTarget={document.body}
+    />
+  </div>
           )}
 
           {/* School Medium */}
@@ -377,6 +394,7 @@ const Second = ({ alldata, handelinputs, errors }) => {
                 <FiAward className="mr-2 text-blue-500" />
                 Degree Program <span className="text-red-500 ml-1">*</span>
               </label>
+
               <Select
                 isLoading={loadingQual}
                 options={qualOptions}
@@ -386,7 +404,7 @@ const Second = ({ alldata, handelinputs, errors }) => {
                     target: { name: "graduation.education_level", value: opt?.value ?? "" },
                   })
                 }
-                placeholder="Select degree"
+                placeholder="Select program"
                 styles={customSelectStyles}
                 menuPortalTarget={document.body}
               />
@@ -490,7 +508,7 @@ const Second = ({ alldata, handelinputs, errors }) => {
                     target: { name: "postGraduation.education_level", value: opt?.value ?? "" },
                   })
                 }
-                placeholder="Select degree"
+                placeholder="Select program"
                 styles={customSelectStyles}
                 menuPortalTarget={document.body}
               />
