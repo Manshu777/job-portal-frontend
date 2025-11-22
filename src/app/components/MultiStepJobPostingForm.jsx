@@ -428,7 +428,7 @@ const MultiStepJobPostingForm = ({ userdata, companies }) => {
 };
 
 
-console.log('userdata',userdata.contact_email)
+
 
   const generateJobDescription = async () => {
     // Ensure required fields exist
@@ -1246,6 +1246,7 @@ const fetchSpecializations = useCallback(async (courseName) => {
         ? "Work from Office"
         : "Hybrid"
     );
+    console.log(formData.joiningFee)
     apiData.append("joining_fee", formData.joiningFee ? "1" : "0");
     apiData.append("basic_requirements", formData.keyResponsibilities || null);
     apiData.append(

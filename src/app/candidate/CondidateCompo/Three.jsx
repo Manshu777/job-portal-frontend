@@ -39,7 +39,7 @@ const Three = ({ alldata, handelinputs, errors }) => {
 
   const jobRoleDropdownRef = useRef(null);
   const locationDropdownRef = useRef(null);
-  const baseurl = "hhttp://147.93.18.63:8000/api/v1";
+  const baseurl = "http://localhost:8000/api/v1";
 
   const experienceLevelOptions = [
     { value: "Fresher", label: "Fresher" },
