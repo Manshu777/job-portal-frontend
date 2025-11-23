@@ -497,6 +497,7 @@ quillRef.current.clipboard.dangerouslyPasteHTML(generatedText);
     companyName: userdata?.company_name || "",
     newCompanyName: "",
     panCard: null,
+     selectedCity: "", 
     gstCertificate: null,
     jobTitle: "",
     jobType: "",
@@ -527,7 +528,7 @@ quillRef.current.clipboard.dangerouslyPasteHTML(generatedText);
     interviewTime: "",
     notEmail: false,
     viewedNumber: false,
-    joiningFee: false,
+
     jobExpireTime: 7,
     numberOfCandidatesRequired: 1,
     industry: "",
@@ -535,6 +536,12 @@ quillRef.current.clipboard.dangerouslyPasteHTML(generatedText);
     jobRole: "",
     joiningFeeRequired: "",
     totalExperienceRequired: "",
+
+    joiningFee: false,                    // ← Main toggle (Yes/No)
+  joiningFeeAmount: "",                 // ← Amount in rupees
+  joiningFeeReason: "",                 // ← Selected reason
+  joiningFeeTiming: "",
+
   });
   const [educationLevels, setEducationLevels] = useState([
   { value: "Graduated", label: "Graduated" },
@@ -742,54 +749,55 @@ quillRef.current.clipboard.dangerouslyPasteHTML(generatedText);
   }, []);
 
   const fetchCourses = useCallback(async (educationLevel) => {
-    if (!educationLevel) {
-      setCourses([]);
+  if (!educationLevel) {
+    setCourses([]);
+    return;
+  }
+
+  setIsLoadingCourses(true);
+  setApiErrorCourses(null);
+
+  try {
+    let endpoint;
+    if (educationLevel === "Graduated") {
+      endpoint = `${baseurl}/qualifications/education-level/1`;
+    } else if (educationLevel === "Masters") {
+      endpoint = `${baseurl}/qualifications/education-level/2`;
+    } else if (educationLevel === "ITI") {
+      endpoint = `${baseurl}/qualifications/education-level/3`;
+    } else if (educationLevel === "Diploma") {
+      endpoint = `${baseurl}/qualifications/education-level/7`;
+    } else {
+      setCourses([{ label: "Any", value: "Any" }]);
       return;
     }
-    setIsLoadingCourses(true);
-    setApiErrorCourses(null);
-    try {
-      let endpoint;
-      console.log("educationLevel", educationLevel); // Replace with your actual base URL
-      if (educationLevel === "Graduated") {
-        endpoint = `${baseurl}/qualifications/education-level/1`; // Graduate
-      } else if (educationLevel === "Masters") {
-        endpoint = `${baseurl}/qualifications/education-level/2`; // Postgraduate
-      } else if (educationLevel === "ITI") {
-        endpoint = `${baseurl}/qualifications/education-level/3`; // Diploma
-      } else if (educationLevel === "Diploma") {
-        endpoint = `${baseurl}/qualifications/education-level/7`; // Diploma
-      } else {
-        setCourses([]);
-        return;
-      }
-      const response = await axios.get(endpoint, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      if (response.data.status === "success") {
-        // Filter for cohort_id: 2
-        const transformedCourses = response.data.data.map((course) => ({
-          label: course.title, // Displayed in the dropdown
-          value: course.id, // Stored value
-        }));
-        // Optionally filter for cohort_id: 2
-        // const filteredCourses = transformedCourses.filter(
-        //   (course) => course.cohort_id === 2 // Note: cohort_id is not in transformedCourses; adjust if needed
-        // );
-        setCourses(transformedCourses);
-        console.log("Courses fetched:", response.data.data);
-      } else {
-        setApiErrorCourses("No courses found");
-      }
-    } catch (error) {
-      setApiErrorCourses("Failed to fetch courses");
-      console.error("Courses API Error:", error);
-    } finally {
-      setIsLoadingCourses(false);
+
+    const response = await axios.get(endpoint, {
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (response.data.status === "success") {
+      const transformedCourses = response.data.data.map((course) => ({
+        label: course.title,
+        value: course.id,
+      }));
+
+      // Always add "Any" as first option
+      setCourses([
+        { label: "Any", value: "Any" },
+        ...transformedCourses,
+      ]);
+    } else {
+      setCourses([{ label: "Any", value: "Any" }]);
     }
-  }, []);
+  } catch (error) {
+    console.error("Courses API Error:", error);
+    setApiErrorCourses("Failed to fetch courses");
+    setCourses([{ label: "Any", value: "Any" }]); // fallback
+  } finally {
+    setIsLoadingCourses(false);
+  }
+}, []);
 
   useEffect(() => {
     const savedData = localStorage.getItem("jobPostingFormData");
@@ -1064,6 +1072,10 @@ const fetchSpecializations = useCallback(async (courseName) => {
 
   const validateStep = (step) => {
     const newErrors = {};
+    const min = Number(String(formData.minSalary).replace(/,/g, ""));
+const max = Number(String(formData.maxSalary).replace(/,/g, ""));
+ console.log('formData',formData)
+
     switch (step) {
       case 1:
         if (!formData.companyName && !formData.newCompanyName) {
@@ -1078,16 +1090,16 @@ const fetchSpecializations = useCallback(async (courseName) => {
             newErrors.panCard =
               "Aggreement With Comapny  / Other Document  is required";
         }
+
         if (!formData.jobTitle) newErrors.jobTitle = "Job title is required";
+         if (!formData.selectedCity) newErrors.jobTitle = "City  is required";
         if (!formData.jobType) newErrors.jobType = "Job Type is required";
 
         // if (!formData.industry) newErrors.industry = "Industry is required";
         // if (!formData.department) newErrors.department = "Department is required";
         if (!formData.jobRole) newErrors.jobRole = "Job Role is required";
 
-        if (!formData.joiningFeeRequired)
-          newErrors.joiningFeeRequired =
-            "Please select whether a joining fee or deposit is required";
+   
 
         //department jobRole
 
@@ -1100,6 +1112,13 @@ const fetchSpecializations = useCallback(async (courseName) => {
               ? "Salary is required"
               : "Minimum salary is required";
         }
+      
+        if (
+       min && max && min >= max
+      ) {
+        newErrors.minSalary = "Minimum salary must be less than maximum salary";
+        newErrors.maxSalary = "Maximum salary must be greater than minimum salary";
+      }
         if (formData.payType !== "Fixed Salary" && !formData.maxSalary) {
           newErrors.maxSalary =
             formData.payType === "Salary + Incentive"
@@ -1522,6 +1541,7 @@ const fetchSpecializations = useCallback(async (courseName) => {
       city_id: city.place_id,
       locations: [], // Reset locations when city changes
     }));
+  
     setCitySearch(city.description);
     setCitySuggestions([]);
     setAreaSuggestions([]);
@@ -2065,58 +2085,63 @@ const renderStepContent = () => {
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-800">
-                Is there any joining fee or deposit required from the candidate?
-                *
-              </label>
-              <div className="mt-2 flex space-x-2">
-                <label
-                  className={` w-[100px]  font-semibold  text-center py-2 px-3 rounded-md border cursor-pointer transition-all duration-300 ${
-                    formData.joiningFeeRequired === "Yes"
-                      ? "bg-[#02325a] text-white border-[#02325a]"
-                      : "bg-white text-gray-800 border-gray-300 hover:bg-blue-50"
-                  } ${
-                    errors.joiningFeeRequired ? "border-red-500" : ""
-                  } text-xs`}
-                >
-                  <input
-                    type="radio"
-                    name="joiningFeeRequired"
-                    value="Yes"
-                    checked={formData.joiningFeeRequired === "Yes"}
-                    onChange={handleInputChange}
-                    className="hidden"
-                  />
-                  Yes
-                </label>
-                <label
-                  className={` w-[100px]  font-semibold  text-center py-2 px-3 rounded-md border cursor-pointer transition-all duration-300 ${
-                    formData.joiningFeeRequired === "No"
-                      ? "bg-[#02325a] text-white border-[#02325a]"
-                      : "bg-white text-gray-800 border-gray-300 hover:bg-blue-50"
-                  } ${
-                    errors.joiningFeeRequired ? "border-red-500" : ""
-                  } text-xs`}
-                >
-                  <input
-                    type="radio"
-                    name="joiningFeeRequired"
-                    value="No"
-                    checked={formData.joiningFeeRequired === "No"}
-                    onChange={handleInputChange}
-                    className="hidden"
-                  />
-                  No
-                </label>
-              </div>
-              {errors.joiningFeeRequired && (
-                <p className="mt-1 text-xs text-red-500">
-                  {errors.joiningFeeRequired}
-                </p>
-              )}
-            </div>
+             {/* ===== JOINING FEE SECTION - FULLY FIXED & ENHANCED ===== */}
+<div className="space-y-6">
+  <div>
+    <label className="block text-sm font-semibold text-gray-800">
+      Is there any joining fee or deposit required from the candidate? *
+    </label>
+    <div className="mt-4 flex space-x-6">
+      {["Yes", "No"].map((option) => (
+        <label
+          key={option}
+          className={`flex items-center cursor-pointer select-none transition-all duration-300 ${
+            formData.joiningFee === (option === "Yes")
+              ? "text-[#02325a] font-bold"
+              : "text-gray-600"
+          }`}
+        >
+          <input
+            type="radio"
+            name="joiningFee"
+            checked={formData.joiningFee === (option === "Yes")}
+            onChange={() => {
+              const isYes = option === "Yes";
+              setFormData((prev) => ({
+                ...prev,
+                joiningFee: isYes,
+                // Reset fee details when "No" is selected
+                joiningFeeAmount: isYes ? prev.joiningFeeAmount : "",
+                joiningFeeReason: isYes ? prev.joiningFeeReason : "",
+                joiningFeeTiming: isYes ? prev.joiningFeeTiming : "",
+              }));
+            }}
+            className="hidden"
+          />
+          <div
+            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mr-3 transition-all ${
+              formData.joiningFee === (option === "Yes")
+                ? "border-[#02325a] bg-[#02325a]"
+                : "border-gray-400"
+            }`}
+          >
+            {formData.joiningFee === (option === "Yes") && (
+              <div className="w-3 h-3 bg-white rounded-full" />
+            )}
+          </div>
+          <span className="text-base">{option}</span>
+        </label>
+      ))}
+    </div>
+    {errors.joiningFeeRequired && (
+      <p className="mt-2 text-xs text-red-500">{errors.joiningFeeRequired}</p>
+    )}
+  </div>
 
+ 
+</div>
+
+           
             <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-800">
@@ -2963,7 +2988,8 @@ const renderStepContent = () => {
             {formData.payType === "Salary + Incentive" && (
               <p><span className="font-medium text-gray-600">Incentive Up To:</span> {formData.incentive ? `₹${formatINR(formData.incentive)}` : "Not specified"}</p>
             )}
-            <p><span className="font-medium text-gray-600">Joining Fee Required:</span> {formData.joiningFeeRequired || "Not specified"}</p>
+          { console.log('joiningFee',formData.joiningFee )}
+            <p><span className="font-medium text-gray-600">Joining Fee Required:</span> {formData.joiningFee }</p>
             <p><span className="font-medium text-gray-600">Number of Vacancies:</span> {formData.numberOfCandidatesRequired || "Not specified"}</p>
           </div>
         </div>

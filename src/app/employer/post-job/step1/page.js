@@ -79,6 +79,10 @@ export default function Page() {
 
   const [jobCategoryInput, setJobCategoryInput] = useState("");
   const [showJobCategoryDropdown, setShowJobCategoryDropdown] = useState(false);
+  const [freeBePaid, setfreeBePaid] = useState("");  // This is fine
+
+// And make sure you have:
+   // Note: setfeesFor (camelCase consistency)
 
   const filteredJobCategories = jobCategories.filter((job) =>
     job.toLowerCase().includes(jobCategoryInput.toLowerCase())
@@ -178,9 +182,11 @@ export default function Page() {
 
   const [addPerk, setaddPerk] = useState(false);
 
-  const [joiningFees, setJoiningFees] = useState(false);
+ const [joiningFees, setJoiningFees] = useState(false);
+  const [feeFor, setfeesFor] = useState("");           // ← fixed: was setFeesFor / inconsistent
+    // ← this was correct but now used properly
 
-  const [feeFor, setfeesFor] = useState("");
+
 
   const chargeTimingArray = [
     { label: "Before the interview", value: "Before Interview", tag: "Popular" },
@@ -188,7 +194,8 @@ export default function Page() {
     { label: "Deducted from salary", value: "From Salary", tag: "Popular" }
   ];
 
-  const [freeBePaid,setfreeBePaid]=useState("")
+   
+
   return (
     <>
       <div className="px-5 md:px-12 xl:px-32 py-4 bg-gray-100 shadow-md">
@@ -781,88 +788,102 @@ export default function Page() {
             )}
           </div>
 
-          <div>
-            <label className="text-sm font-semibold">
-              Is there any joining fee or deposit required from the candidate? *
-            </label>
+             <div>
+          <label className="text-sm font-semibold">
+            Is there any joining fee  from the candidate? *
+          </label>
 
-            <div className="flex items-center gap-x-2 mt-4">
-              <button
-                onClick={() => setJoiningFees(true)}
-                className="py-1 flex items-center gap-x-2 px-4 border rounded-full text-sm hover:bg-gray-100"
-              >
-                Yes
-              </button>
-              <button
-                onClick={() => setJoiningFees(false)}
-                className="py-1 flex items-center gap-x-2 px-4 border rounded-full text-sm hover:bg-gray-100"
-              >
-                No
-              </button>
-            </div>
-
-            {joiningFees && (
-              <>
-                <div className="mt-4 w-full lg:w-[40%]">
-                  <label className="text-sm font-bold block mb-1">
-                    Fee amount *
-                  </label>
-                  <div className="relative w-full">
-                    <input
-                      type="text"
-                      placeholder="₹ 1000"
-                      className="w-full border rounded-md p-2 pr-16 text-sm outline-none focus:ring-2 ring-blue-300"
-                    />
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <label className="text-sm font-medium">
-                    What is this fee for? *
-                  </label>
-                  <div className="flex flex-wrap gap-3 mt-2">
-                    {[
-                      "Asset/ Inventory Charge",
-                      "Security deposit( Refundable)",
-                      "Registration/ Training Fees",
-                      "Commission",
-                      "IRDA Exam",
-                      "Other Reason",
-                    ].map((type, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setfeesFor(type)}
-                        className={`py-1 px-4 border rounded-full text-sm 
-            ${
-              feeFor === type ? "bg-green-700 text-white" : "hover:bg-gray-100"
-            }`}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <label className="text-sm font-medium">
-                  When should the fee be paid? *
-                  </label>
-                  <div className="flex flex-wrap gap-3 mt-2">
-                    {chargeTimingArray.map((elm, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setfreeBePaid(elm.label)}
-                        className={`py-1 px-4 border rounded-full text-sm 
-            ${
-              freeBePaid === elm.label ? "bg-green-700 text-white" : "hover:bg-gray-100"
-            }`}
-                      >
-                        {elm.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
+          <div className="flex items-center gap-x-6 mt-4">
+            <button
+              onClick={() => setJoiningFees(true)}
+              className={`py-2 px-6 border rounded-full text-sm font-medium transition ${
+                joiningFees ? "bg-[#005F3E] text-white" : "border-gray-300 hover:bg-gray-100"
+              }`}
+            >
+              Yes
+            </button>
+            <button
+             onClick={() => {
+  setJoiningFees(false);
+  setfeesFor("");
+  setfreeBePaid("");
+}}
+              className={`py-2 px-6 border rounded-full text-sm font-medium transition ${
+                !joiningFees ? "bg-[#005F3E] text-white" : "border-gray-300 hover:bg-gray-100"
+              }`}
+            >
+              No
+            </button>
           </div>
+
+          {/* JOINING FEE CONDITIONAL SECTION - FULLY FIXED */}
+          {joiningFees && (
+            <>
+              <div className="mt-6 w-full lg:w-[40%]">
+                <label className="text-sm font-bold block mb-1">Fee amount *</label>
+                <input
+                  type="text"
+                  placeholder="₹ 1000"
+                  className="w-full border rounded-md p-3 text-sm outline-none focus:ring-2 ring-blue-300"
+                />
+              </div>
+
+              <div className="mt-6">
+                <label className="text-sm font-medium">What is this fee for? *</label>
+                <div className="flex flex-wrap gap-3 mt-3">
+                  {[
+                    "Asset/ Inventory Charge",
+                    "Security deposit( Refundable)",
+                    "Registration/ Training Fees",
+                    "Commission",
+                    "IRDA Exam",
+                    "Other Reason",
+                  ].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setfeesFor(type)}
+                      className={`py-2 px-5 border rounded-full text-sm transition ${
+                        feeFor === type
+                          ? "bg-green-700 text-white"
+                          : "hover:bg-gray-100"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <label className="text-sm font-medium">
+                  When should the fee be paid? *
+                </label>
+                <div className="flex flex-wrap gap-3 mt-3">
+                  {chargeTimingArray.map((elm) => (
+                    <button
+                      key={elm.value}
+                      onClick={() => setfreeBePaid(elm.value)}
+                      className={`py-2 px-5 border rounded-full text-sm relative transition ${
+                        freeBePaid === elm.value
+                          ? "bg-green-700 text-white"
+                          : "hover:bg-gray-100"
+                      }`}
+                    >
+                      {elm.label}
+                      {elm.tag && (
+                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                          {elm.tag}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+    
+
         </div>
 
         <div className="bg-white rounded-md shadow-sm py-5 px-4 space-y-4 flex justify-center items-center">

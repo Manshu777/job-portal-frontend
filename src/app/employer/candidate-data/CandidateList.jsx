@@ -81,9 +81,51 @@ const getSelectedValues = (selectedOptions) => {
 };
 
 
+const formatDateRange = (start, end, isCurrent) => {
+  const format = (date) => {
+    if (!date) return "Present";
+    return new Date(date).toLocaleDateString("en-IN", {
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const startFmt = format(start);
+  const endFmt = isCurrent ? "Present" : format(end);
+
+  return `${startFmt} - ${endFmt}`;
+};
+
+const formatExperienceTotal = (years, months) => {
+  years = parseInt(years) || 0;
+  months = parseInt(months) || 0;
+  const totalYears = Math.floor(months / 12);
+  const remainingMonths = months % 12;
+
+  const y = years + totalYears;
+  const m = remainingMonths;
+
+  if (y === 0 && m === 0) return "Fresher";
+  if (y === 0) return `${m} month${m > 1 ? "s" : ""}`;
+  if (m === 0) return `${y} year${y > 1 ? "s" : ""}`;
+  return `${y} yr${y > 1 ? "s" : ""} ${m} mo`;
+};
+
+const formatIndianSalary = (salary) => {
+  if (!salary) return "Not disclosed";
+  const num = parseFloat(salary);
+  if (num >= 10000000) return `₹${(num / 10000000).toFixed(1)} Cr`;
+  if (num >= 100000) return `₹${(num / 100000).toFixed(1)} L`;
+  if (num >= 1000) return `₹${(num / 1000).toFixed(1)} K`;
+  return `₹${num}`;
+};
+
+
 const CandidateCard = ({ candidate, onViewProfile }) => {
   const [showPhone, setShowPhone] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState(candidate.number || "xxxxxxx");
+  const [emailNumber, setemailNumber] = useState(candidate.email || "xxxxxxx");
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -117,8 +159,9 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
         }
       );
       setPhoneNumber(response.data.number || "N/A");
+      setemailNumber(response.data.email || "N/A")
       setShowPhone(true);
-      alert(response.data.message);
+  
     } catch (error) {
       const errorMessage =
         error.response?.data?.error || "Error revealing number";
@@ -358,7 +401,7 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
       </div>
 
       <div
-        className={`fixed top-0 right-0 h-full w-full sm:w-[600px] bg-gradient-to-br from-white to-gray-100 shadow-2xl transform transition-transform duration-500 ease-in-out z-50 ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-[600px] bg-gradient-to-br from-white to-gray-100 shadow-2xl transform transition-transform duration-500 ease-in-out z-[999] ${
           isSidebarOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -396,7 +439,7 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
                   <strong>Full Name:</strong> {candidate.full_name}
                 </p>
                 <p className="text-sm text-gray-600">
-                  <strong>Email:</strong> {candidate.email}
+                  <strong>Email:</strong>   {candidate.number_revealed ? candidate.email : emailNumber}
                 </p>
                 <p className="text-sm text-gray-600">
                   <strong>Phone:</strong>{" "}
@@ -422,75 +465,173 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
             </div>
 
             <div className="bg-white rounded-lg shadow-md p-6 transition-transform hover:scale-[1.02] duration-300">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <FaBriefcase className="text-[#02325a]" /> Professional Details
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <p className="text-sm text-gray-600">
-                  <strong>Job Title:</strong> {candidate.job_title || "N/A"}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Company:</strong> {candidate.company_name || "N/A"}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Experience:</strong> {formatExperience()}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Current Salary:</strong>{" "}
-                  {formatIndianSalary(candidate.current_salary)}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Employment Type:</strong>{" "}
-                  {candidate.employment_type || "N/A"}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Experience Level:</strong>{" "}
-                  {candidate.experience_level || "N/A"}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Notice Period:</strong>{" "}
-                  {isImmediateJoiner ? "Immediate Joiner" : candidate.notice_period || "Not specified"}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Job Roles:</strong>{" "}
-                  {jobRoles.length > 0 ? jobRoles.join(", ") : "None"}
+  <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center justify-between">
+    <span className="flex items-center gap-2">
+      <FaBriefcase className="text-[#02325a]" /> Work Experience
+    </span>
+    {/* Optional: Show total experience badge */}
+    {candidate.experiences && candidate.experiences.length > 0 && (
+      <span className="text-xs bg-[#02325a] text-white px-3 py-1 rounded-full">
+        {formatExperienceTotal(candidate.experience_years, candidate.experience_months)}
+      </span>
+    )}
+  </h3>
+
+  {candidate.experiences && candidate.experiences.length > 0 ? (
+    <div className="space-y-6">
+      {candidate.experiences.map((exp, index) => (
+        <div
+          key={exp.id || index}
+          className={`relative border-l-4 ${
+            exp.currently_working ? "border-green-500" : "border-[#02325a]"
+          } pl-5 py-4 bg-gray-50 rounded-r-lg shadow-sm`}
+        >
+          {/* Current Job Indicator */}
+          {exp.currently_working && (
+            <span className="absolute -top-3 -left-3 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+              Current
+            </span>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            {/* Job Title */}
+            <p className="text-gray-800 font-medium col-span-2">
+              {exp.job_title || "Not Specified"}
+            </p>
+
+            {/* Company Name */}
+            <p className="text-gray-700">
+              <strong>Company:</strong> {exp.company_name || "Not Mentioned"}
+            </p>
+
+            {/* Department / Function */}
+            {exp.department && (
+              <p className="text-gray-700">
+                <strong>Department:</strong> {exp.department}
+              </p>
+            )}
+
+            {/* Duration */}
+            <p className="text-gray-700">
+              <strong>Duration:</strong>{" "}
+              {formatDateRange(exp.start_date, exp.end_date, exp.currently_working)}
+            </p>
+
+            {/* Employment Type */}
+            {exp.employment_type && (
+              <p className="text-gray-700">
+                <strong>Type:</strong>{" "}
+                <span className="capitalize">{exp.employment_type.replace(/_/g, " ")}</span>
+              </p>
+            )}
+
+            {/* Notice Period (only if not current) */}
+            {!exp.currently_working && candidate.notice_period && (
+              <p className="text-gray-700 sm:col-span-2">
+                <strong>Notice Period:</strong>{" "}
+                {isImmediateJoiner ? "Immediate Joiner" : candidate.notice_period}
+              </p>
+            )}
+
+            {/* Current Salary (only show for current job) */}
+            {exp.currently_working && candidate.current_salary && (
+              <p className="text-gray-700">
+                <strong>Current Salary:</strong>{" "}
+                {formatIndianSalary(candidate.current_salary)}
+              </p>
+            )}
+
+            {/* Job Description (optional) */}
+            {exp.job_description && (
+              <div className="col-span-2 mt-2">
+                <p className="text-gray-600 text-xs leading-relaxed">
+                  {exp.job_description}
                 </p>
               </div>
-            </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div className="text-center py-8 text-gray-500 italic">
+      {candidate.experience_years > 0 || candidate.experience_months > 0
+        ? `${formatExperienceTotal(
+            candidate.experience_years,
+            candidate.experience_months
+          )} of experience (details not added)`
+        : "Fresher / No experience added"}
+    </div>
+  )}
+</div>
 
             <div className="bg-white rounded-lg shadow-md p-6 transition-transform hover:scale-[1.02] duration-300">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <FaGraduationCap className="text-[#02325a]" /> Education
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <p className="text-sm text-gray-600">
-                  <strong>Degree:</strong> {candidate.degree || "N/A"}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Specialization:</strong>{" "}
-                  {candidate.specialization || "N/A"}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>College:</strong> {candidate.college_name || "N/A"}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Passing Marks:</strong>{" "}
-                  {candidate.passing_marks || "N/A"}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Education Level:</strong>{" "}
-                  {candidate.education_level || "N/A"}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Currently Pursuing:</strong>{" "}
-                  {candidate.currently_pursuing || "N/A"}
-                </p>
-                <p className="text-sm text-gray-600">
-                  <strong>Highest Education:</strong>{" "}
-                  {candidate.highest_education || "N/A"}
-                </p>
-              </div>
-            </div>
+  <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+    <FaGraduationCap className="text-[#02325a]" /> Education
+  </h3>
+
+  {candidate.educations && candidate.educations.length > 0 ? (
+    <div className="space-y-6">
+      {candidate.educations.map((edu, index) => (
+        <div
+          key={edu.id || index}
+          className="border-l-4 border-[#02325a] pl-4 py-3 bg-gray-50 rounded-r-lg"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            {/* Education Level & Degree */}
+            <p className="text-gray-700">
+              <strong className="text-gray-900">Degree:</strong>{" "}
+              {edu.education_level || edu.degree || "Not Specified"}
+            </p>
+
+            {/* Specialization */}
+            <p className="text-gray-700">
+              <strong className="text-gray-900">Specialization:</strong>{" "}
+              {edu.specialization || "N/A"}
+            </p>
+
+            {/* College Name */}
+            <p className="text-gray-700">
+              <strong className="text-gray-900">Institute:</strong>{" "}
+              {edu.college_name || "Not Mentioned"}
+            </p>
+
+            {/* Year of Completion */}
+            <p className="text-gray-700">
+              <strong className="text-gray-900">Year:</strong>{" "}
+              {edu.complete_years || edu.complete_month
+                ? `${edu.complete_years || ""}${edu.complete_month ? ` - ${edu.complete_month}` : ""}`
+                : "N/A"}
+            </p>
+
+            {/* Education Type (Graduation / Post Graduation) */}
+            <p className="text-gray-700 capitalize">
+              <strong className="text-gray-900">Level:</strong>{" "}
+              {edu.education_type?.replace("_", " ") || "Not Specified"}
+            </p>
+
+            {/* Currently Pursuing */}
+            <p className="text-gray-700">
+              <strong className="text-gray-900">Status:</strong>{" "}
+              <span className={`font-medium ${edu.pursuing ? "text-green-600" : "text-gray-600"}`}>
+                {edu.pursuing ? "Currently Pursuing" : "Completed"}
+              </span>
+            </p>
+
+            {/* Passing Marks (Optional) */}
+            {edu.passing_marks && (
+              <p className="text-gray-700 sm:col-span-2">
+                <strong className="text-gray-900">Marks/CGPA:</strong> {edu.passing_marks}
+              </p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <p className="text-gray-500 italic">No education details added yet.</p>
+  )}
+</div>
 
             <div className="bg-white rounded-lg shadow-md p-6 transition-transform hover:scale-[1.02] duration-300">
               <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
