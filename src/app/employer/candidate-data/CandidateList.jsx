@@ -1167,7 +1167,7 @@ const CandidateList = () => {
     <div className="flex min-h-screen  bg-gradient-to-br from-blue-50 to-gray-100 ">
       <Sidebar />
       <div className="flex-1 flex flex-col p-4 sm:p-6 lg:p-8 overflow-auto">
-        <div className="flex flex-col  lg:flex-row gap-6 lg:gap-4 max-w-[80rem] mx-auto w-full">
+        <div className="flex flex-col  lg:flex-row gap-10 max-w-[68rem] mx-auto w-full">
           <div className="sticky w-[30%] top-4">
             <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl p-6 sm:p-8 border border-gray-100">
               <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
