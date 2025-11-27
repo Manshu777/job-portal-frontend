@@ -477,8 +477,8 @@ const Three = ({ alldata, handelinputs, errors }) => {
         </div>
 
         {/* Preferred Locations */}
-        {(alldata.experience_level === "Both" ||
-          alldata.experience_level === "Fresher") && (
+        {/* {(alldata.experience_level === "Both" ||
+          alldata.experience_level === "Fresher") && ( */}
           <div className="animate-fade-in">
             <label className="text-sm font-medium text-gray-700 mb-3 flex items-center">
               <FiMapPin className="mr-2 text-emerald-500" />
@@ -502,7 +502,7 @@ const Three = ({ alldata, handelinputs, errors }) => {
             />
             <p className="text-xs text-gray-500 mt-1">Select up to 3</p>
           </div>
-        )}
+        {/* )} */}
 
         {/* ---------- NOTICE PERIOD (Added) ---------- */}
         {alldata.experience_level !== "Fresher" && (

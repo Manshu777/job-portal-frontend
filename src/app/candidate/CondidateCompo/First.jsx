@@ -4,14 +4,12 @@ import { FiCalendar } from "react-icons/fi";
 import Select from "react-select";
 import { State, City } from "country-state-city";
 
-const First = ({ alldata, handelinputs, handelgender,errors }) => {
-
+const First = ({ alldata, handelinputs, handelgender, errors }) => {
   const [isChecked, setIsChecked] = useState(true);
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
   const [selectedState, setSelectedState] = useState(null);
   const [selectedCity, setSelectedCity] = useState(null);
-
 
   useEffect(() => {
     const indiaStates = State.getStatesOfCountry("IN").map((state) => ({
@@ -21,13 +19,14 @@ const First = ({ alldata, handelinputs, handelgender,errors }) => {
     setStates(indiaStates);
   }, []);
 
-
   useEffect(() => {
     if (selectedState) {
-      const stateCities = City.getCitiesOfState("IN", selectedState.value).map((city) => ({
-        value: city.name,
-        label: city.name,
-      }));
+      const stateCities = City.getCitiesOfState("IN", selectedState.value).map(
+        (city) => ({
+          value: city.name,
+          label: city.name,
+        })
+      );
       setCities(stateCities);
       setSelectedCity(null); // Reset city when state changes
     } else {
@@ -35,7 +34,6 @@ const First = ({ alldata, handelinputs, handelgender,errors }) => {
       setSelectedCity(null);
     }
   }, [selectedState]);
-
 
   const handleStateChange = (selectedOption) => {
     setSelectedState(selectedOption);
@@ -46,7 +44,6 @@ const First = ({ alldata, handelinputs, handelgender,errors }) => {
       },
     });
   };
-
 
   const handleCityChange = (selectedOption) => {
     setSelectedCity(selectedOption);
@@ -60,41 +57,40 @@ const First = ({ alldata, handelinputs, handelgender,errors }) => {
 
   // Custom styles for react-select
 
-
-
   console.log("errors", errors);
 
-
   const customStyles = {
-  control: (provided) => ({
-    ...provided,
-    borderColor: "#d1d5db",
-    padding: "0.5rem",
-    borderRadius: "0.5rem",
-    "&:hover": {
-      borderColor: "#10b981",
-    },
-    boxShadow: "none",
-  }),
-  option: (provided, state) => ({
-    ...provided,
-    backgroundColor: state.isSelected ? "#10b981" : state.isFocused ? "#ecfdf5" : null,
-    color: state.isSelected ? "white" : "#374151",
-  }),
-  menu: (provided) => ({
-    ...provided,
-    borderRadius: "0.5rem",
-    marginTop: "0.25rem",
-    zIndex: 9999, // Add this to ensure the dropdown menu appears above other elements
-  }),
-};
+    control: (provided) => ({
+      ...provided,
+      borderColor: "#d1d5db",
+      padding: "0.5rem",
+      borderRadius: "0.5rem",
+      "&:hover": {
+        borderColor: "#10b981",
+      },
+      boxShadow: "none",
+    }),
+    option: (provided, state) => ({
+      ...provided,
+      backgroundColor: state.isSelected
+        ? "#10b981"
+        : state.isFocused
+        ? "#ecfdf5"
+        : null,
+      color: state.isSelected ? "white" : "#374151",
+    }),
+    menu: (provided) => ({
+      ...provided,
+      borderRadius: "0.5rem",
+      marginTop: "0.25rem",
+      zIndex: 9999, // Add this to ensure the dropdown menu appears above other elements
+    }),
+  };
 
-
-console.log(alldata)
+  console.log(alldata);
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
       <div className="p-6 space-y-6">
-
         <div className="animate-fade-in">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Full Name
@@ -109,11 +105,10 @@ console.log(alldata)
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
             />
             {errors.full_name && (
-          <p className="text-red-500 text-sm">{errors.full_name}</p>
-        )}
+              <p className="text-red-500 text-sm">{errors.full_name}</p>
+            )}
           </div>
         </div>
-
 
         <div className="animate-fade-in">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -129,12 +124,9 @@ console.log(alldata)
             />
             <FiCalendar className="absolute right-3 top-3.5 text-gray-400" />
 
-             {errors.dob && (
-          <p className="text-red-500 text-sm">{errors.dob}</p>
-        )}
+            {errors.dob && <p className="text-red-500 text-sm">{errors.dob}</p>}
           </div>
         </div>
-
 
         <div className="animate-fade-in">
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -154,13 +146,11 @@ console.log(alldata)
                 {gender}
               </button>
             ))}
-              
           </div>
-           {errors.gender && (
-          <p className="text-red-500 text-sm">{errors.gender}</p>
-        )}
+          {errors.gender && (
+            <p className="text-red-500 text-sm">{errors.gender}</p>
+          )}
         </div>
-
 
         <div className="animate-fade-in">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -177,56 +167,61 @@ console.log(alldata)
             maxLength={15}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
           />
-           {errors.number && (
-          <p className="text-red-500 text-sm">{errors.number}</p>
-        )}
+          {errors.number && (
+            <p className="text-red-500 text-sm">{errors.number}</p>
+          )}
         </div>
 
         {/* State Selection */}
         <div className="animate-fade-in">
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    State
-  </label>
-  <Select
-    options={states}
-    value={
-      states.find(
-        (opt) =>
-          opt.value === alldata.state || opt.label === alldata.state
-      ) || selectedState
-    }
-    onChange={handleStateChange}
-    placeholder="Select State"
-    styles={customStyles}
-    isClearable
-    className="text-gray-700"
-  />
-  {errors.state && <p className="text-red-500 text-sm">{errors.state}</p>}
-</div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            State
+          </label>
+          <Select
+            options={states}
+            value={
+              states.find(
+                (opt) =>
+                  opt.value === alldata.state || opt.label === alldata.state
+              ) || selectedState
+            }
+            onChange={handleStateChange}
+            placeholder="Select State"
+            styles={customStyles}
+            isClearable
+            className="text-gray-700"
+          />
+          {errors.state && (
+            <p className="text-red-500 text-sm">{errors.state}</p>
+          )}
+        </div>
 
         {/* City Selection */}
-       <div className="animate-fade-in">
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    City
-  </label>
-  <Select
-    options={cities}
-    value={
-      cities.find(
-        (opt) =>
-          opt.value === alldata.city || opt.label === alldata.city
-      ) || selectedCity
-    }
-    onChange={handleCityChange}
-    placeholder="Select City"
-    styles={customStyles}
-    isClearable
-    isDisabled={!selectedState}
-    className="text-gray-700"
-  />
-  {errors.city && <p className="text-red-500 text-sm">{errors.city}</p>}
-</div>
+        <div className="animate-fade-in">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            City
+          </label>
 
+          <Select
+            options={cities}
+            value={
+              cities.length > 0
+                ? cities.find(
+                    (opt) =>
+                      opt.value?.toString().trim().toLowerCase() ===
+                      alldata.city?.toString().trim().toLowerCase()
+                  ) || null
+                : { value: alldata.city, label: alldata.city }
+            }
+            onChange={handleCityChange}
+            placeholder="Select City"
+            styles={customStyles}
+            isClearable
+            isDisabled={!selectedState}
+            className="text-gray-700"
+          />
+          {errors.city && <p className="text-red-500 text-sm">{errors.city}</p>}
+        </div>
 
         {/* WhatsApp Checkbox */}
         <div

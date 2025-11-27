@@ -300,8 +300,8 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
               Pref. Location
             </span>
             <span className="flex text-xl items-center text-[#02325a] gap-1">
-              {preferredLocations.length > 0
-                ? preferredLocations.join(", ")
+              {preferredLocations?.length > 0
+                ? preferredLocations?.join(", ")
                 : `${candidate.city}, ${candidate.state}`}
             </span>
           </div>
@@ -667,8 +667,8 @@ const CandidateCard = ({ candidate, onViewProfile }) => {
                 </p>
                 <p className="text-sm text-gray-600">
                   <strong>Preferred Locations:</strong>{" "}
-                  {preferredLocations.length > 0
-                    ? preferredLocations.join(", ")
+                  {preferredLocations?.length > 0
+                    ? preferredLocations?.join(", ")
                     : "Not specified"}
                 </p>
                 <p className="text-sm text-gray-600">
